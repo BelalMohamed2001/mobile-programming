@@ -11,7 +11,6 @@ class GiftListPage extends StatefulWidget {
 }
 
 class _GiftListPageState extends State<GiftListPage> {
-  // Example gift data for the friend
   List<Map<String, dynamic>> _gifts = List.generate(5, (index) {
     return {
       'name': 'Gift $index',
@@ -22,29 +21,23 @@ class _GiftListPageState extends State<GiftListPage> {
     };
   });
 
-  // Sort by: name, category, or status
-  int _sortColumnIndex = 0; // Default sort by name
+  int _sortColumnIndex = 0;
   bool _isAscending = true;
 
-  // Sort the list of gifts
   void _sortGifts(int columnIndex, bool ascending) {
     setState(() {
       _sortColumnIndex = columnIndex;
       _isAscending = ascending;
       if (columnIndex == 0) {
-        // Sort by Name
         _gifts.sort((a, b) => a['name'].compareTo(b['name']) * (ascending ? 1 : -1));
       } else if (columnIndex == 1) {
-        // Sort by Category
         _gifts.sort((a, b) => a['category'].compareTo(b['category']) * (ascending ? 1 : -1));
       } else if (columnIndex == 2) {
-        // Sort by Status
         _gifts.sort((a, b) => a['status'].compareTo(b['status']) * (ascending ? 1 : -1));
       }
     });
   }
 
-  // Function to handle adding a new gift
   void _addGift() {
     setState(() {
       _gifts.add({
@@ -61,30 +54,26 @@ class _GiftListPageState extends State<GiftListPage> {
     final updatedGift = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => GiftDetailsPage(giftDetails: _gifts[index]), // Pass the current gift details
+        builder: (context) => GiftDetailsPage(giftDetails: _gifts[index]),
       ),
     );
 
-    // If updatedGift is not null, update the list with the new data
     if (updatedGift != null) {
       setState(() {
-        _gifts[index] = updatedGift; // Update the gift data with the changes from GiftDetailsPage
+        _gifts[index] = updatedGift;
       });
     }
   }
 
-
-  // Function to handle deleting a gift
   void _deleteGift(int index) {
     setState(() {
-      _gifts.removeAt(index); // Remove the gift from the list
+      _gifts.removeAt(index);
     });
   }
 
-  // Function to toggle pledge status
   void _togglePledgeStatus(int index) {
     setState(() {
-      _gifts[index]['status'] = _gifts[index]['status'] == 'Available' ? 'Pledged' : 'Available'; // Toggle status
+      _gifts[index]['status'] = _gifts[index]['status'] == 'Available' ? 'Pledged' : 'Available';
     });
   }
 
@@ -113,7 +102,6 @@ class _GiftListPageState extends State<GiftListPage> {
           padding: const EdgeInsets.all(8.0),
           child: Column(
             children: [
-              // Sorting functionality
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
