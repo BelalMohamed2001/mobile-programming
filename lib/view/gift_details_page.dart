@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 class GiftDetailsPage extends StatefulWidget {
   final Map<String, dynamic> giftDetails; // To pass the gift details
@@ -24,13 +24,14 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.giftDetails['name']);
+    _nameController = TextEditingController(text: widget.giftDetails['giftName']);
     _categoryController = TextEditingController(text: widget.giftDetails['category']);
     _descriptionController = TextEditingController(text: widget.giftDetails['description']);
     _priceController = TextEditingController(text: widget.giftDetails['price'].toString());
-    _isPledged = widget.giftDetails['status'] == 'Pledged'; // Initialize the pledge status
+    _isPledged = widget.giftDetails['status'] == 'Pledged';
   }
 
+  // Function to pick image from the gallery or camera
   Future<void> _pickImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery); // Gallery or Camera option
 
@@ -43,9 +44,10 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
     }
   }
 
+  // Function to save the changes (this could be extended to save in a database)
   void _saveChanges() {
     Map<String, dynamic> updatedGift = {
-      'name': _nameController.text,
+      'giftName': _nameController.text,
       'category': _categoryController.text,
       'description': _descriptionController.text,
       'price': _priceController.text,
@@ -53,6 +55,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
       'image': _imageFile, // Save image file if changed
     };
 
+    // Return the updated gift to the previous screen (Gift List Page)
     Navigator.pop(context, updatedGift);  // Pass updated gift data back
   }
 
@@ -67,6 +70,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
         padding: const EdgeInsets.all(16.0),
         child: ListView(
           children: [
+            // Gift Name
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Gift Name'),
@@ -74,6 +78,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
             ),
             const SizedBox(height: 10),
 
+            // Category
             TextField(
               controller: _categoryController,
               decoration: const InputDecoration(labelText: 'Category'),
@@ -81,6 +86,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
             ),
             const SizedBox(height: 10),
 
+            // Description
             TextField(
               controller: _descriptionController,
               decoration: const InputDecoration(labelText: 'Description'),
@@ -88,6 +94,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
             ),
             const SizedBox(height: 10),
 
+            // Price
             TextField(
               controller: _priceController,
               decoration: const InputDecoration(labelText: 'Price'),
@@ -96,8 +103,9 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
             ),
             const SizedBox(height: 10),
 
+            // Image Upload
             GestureDetector(
-              onTap: _isPledged ? null : _pickImage,
+              onTap: _isPledged ? null : _pickImage, // Disable image upload for pledged gifts
               child: Container(
                 height: 150,
                 decoration: BoxDecoration(
@@ -111,12 +119,14 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
             ),
             const SizedBox(height: 20),
 
+            // Pledge Status (Available / Pledged)
             Row(
               children: [
                 const Text('Pledged'),
                 Switch(
                   value: _isPledged,
                   onChanged: (value) {
+                    // Allow toggle between Available and Pledged
                     setState(() {
                       _isPledged = value;
                     });
@@ -127,6 +137,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
             ),
             const SizedBox(height: 20),
 
+            // Save Button
             ElevatedButton(
               onPressed: _saveChanges,
               child: const Text('Save Changes'),
