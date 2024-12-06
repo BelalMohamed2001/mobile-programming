@@ -28,10 +28,9 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
     _categoryController = TextEditingController(text: widget.giftDetails['category']);
     _descriptionController = TextEditingController(text: widget.giftDetails['description']);
     _priceController = TextEditingController(text: widget.giftDetails['price'].toString());
-    _isPledged = widget.giftDetails['status'] == 'Pledged';
+    _isPledged = widget.giftDetails['status'] == 'Pledged'; // Initialize the pledge status
   }
 
-  // Function to pick image from the gallery or camera
   Future<void> _pickImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery); // Gallery or Camera option
 
@@ -44,7 +43,6 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
     }
   }
 
-  // Function to save the changes (this could be extended to save in a database)
   void _saveChanges() {
     Map<String, dynamic> updatedGift = {
       'name': _nameController.text,
@@ -55,7 +53,6 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
       'image': _imageFile, // Save image file if changed
     };
 
-    // Return the updated gift to the previous screen (Gift List Page)
     Navigator.pop(context, updatedGift);  // Pass updated gift data back
   }
 
@@ -70,7 +67,6 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
         padding: const EdgeInsets.all(16.0),
         child: ListView(
           children: [
-            // Gift Name
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Gift Name'),
@@ -78,7 +74,6 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
             ),
             const SizedBox(height: 10),
 
-            // Category
             TextField(
               controller: _categoryController,
               decoration: const InputDecoration(labelText: 'Category'),
@@ -86,7 +81,6 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
             ),
             const SizedBox(height: 10),
 
-            // Description
             TextField(
               controller: _descriptionController,
               decoration: const InputDecoration(labelText: 'Description'),
@@ -94,7 +88,6 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
             ),
             const SizedBox(height: 10),
 
-            // Price
             TextField(
               controller: _priceController,
               decoration: const InputDecoration(labelText: 'Price'),
@@ -103,9 +96,8 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
             ),
             const SizedBox(height: 10),
 
-            // Image Upload
             GestureDetector(
-              onTap: _isPledged ? null : _pickImage, // Disable image upload for pledged gifts
+              onTap: _isPledged ? null : _pickImage,
               child: Container(
                 height: 150,
                 decoration: BoxDecoration(
@@ -119,19 +111,15 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
             ),
             const SizedBox(height: 20),
 
-            // Pledge Status (Available / Pledged)
             Row(
               children: [
                 const Text('Pledged'),
                 Switch(
                   value: _isPledged,
                   onChanged: (value) {
-                    // Disable the toggle if the gift is already pledged
-                    if (!_isPledged) {
-                      setState(() {
-                        _isPledged = value;
-                      });
-                    }
+                    setState(() {
+                      _isPledged = value;
+                    });
                   },
                   activeColor: Colors.green,
                 ),
@@ -139,7 +127,6 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
             ),
             const SizedBox(height: 20),
 
-            // Save Button
             ElevatedButton(
               onPressed: _saveChanges,
               child: const Text('Save Changes'),
