@@ -16,22 +16,19 @@ class EventListPage extends StatefulWidget {
 }
 
 class _EventListPageState extends State<EventListPage> {
-  // Example event data for the user and friends
   List<Map<String, dynamic>> _events = List.generate(5, (index) {
     return {
       'name': 'Event $index',
       'category': 'Category ${index % 3}',
       'status': index % 2 == 0 ? 'Upcoming' : 'Past',
       'description': 'This is a description of Event $index',
-      'date': '2024-12-01', // Example date
+      'date': '2024-12-01',
     };
   });
 
-  // Sort by: name, category, or status
   int _sortColumnIndex = 0;
   bool _isAscending = true;
 
-  // Sort the list of events
   void _sortEvents(int columnIndex, bool ascending) {
     setState(() {
       _sortColumnIndex = columnIndex;
@@ -46,7 +43,6 @@ class _EventListPageState extends State<EventListPage> {
     });
   }
 
-  // Function to handle adding a new event
   void _addEvent() {
     setState(() {
       _events.add({
@@ -59,9 +55,7 @@ class _EventListPageState extends State<EventListPage> {
     });
   }
 
-  // Function to handle navigating to Event Details
   void _navigateToEventDetails(int index) async {
-    // Navigate to the event details page
     final updatedEvent = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -76,7 +70,6 @@ class _EventListPageState extends State<EventListPage> {
     }
   }
 
-  // Function to handle deleting an event
   void _deleteEvent(int index) {
     setState(() {
       _events.removeAt(index);
