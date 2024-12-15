@@ -1,35 +1,41 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
-class AuthModel {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+// Updated UserModel with added utility methods
+class UserModel {
+  final String uid;
+  late final String name;
+  late final String email;
+  late final String phoneNumber;
+   List<String> friendList;
 
-  Future<User?> signUp(String email, String password) async {
-    try {
-      final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      return userCredential.user;
-    } catch (e) {
-      throw Exception('Sign Up Failed: $e');
-    }
+  UserModel({
+    required this.uid,
+    required this.name,
+    required this.email,
+    required this.phoneNumber,
+    required this.friendList,
+  });
+
+  // Convert Firestore document into UserModel
+  factory UserModel.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    return UserModel(
+      uid: doc.id,
+      name: data['name'] ?? '',
+      email: data['email'] ?? '',
+      phoneNumber: data['phoneNumber'] ?? '',
+      friendList: List<String>.from(data['friendList'] ?? []),
+    );
   }
 
-  Future<User?> signIn(String email, String password) async {
-    try {
-      final userCredential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      return userCredential.user;
-    } catch (e) {
-      throw Exception('Login Failed: $e');
-    }
+  // Convert UserModel to a Map for Firestore
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'email': email,
+      'phoneNumber': phoneNumber,
+      'friendList': friendList,
+    };
   }
-
-  Future<void> signOut() async {
-    await _auth.signOut();
-  }
-
-  Stream<User?> get authState => _auth.authStateChanges();
 }
