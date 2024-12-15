@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'controllers/auth_controller.dart';
 import 'view/home_page.dart';
 import 'view/login_page.dart';
+import 'view/signup_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,7 +12,7 @@ Future<void> main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -23,18 +24,29 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.pink,
       ),
-      home: StreamBuilder(
-        stream: authController.authState,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasData) {
-            return const HomePage(); // Redirect to Home if authenticated
-          }
-          return  LoginPage(); // Redirect to Login if not authenticated
-        },
-      ),
+      initialRoute: '/login', // Initial route set to login page
+      routes: {
+        '/login': (context) =>  LoginPage(),
+        '/signup': (context) =>  SignupPage(),
+        '/': (context) => StreamBuilder(
+          stream: authController.authStateChanges,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+
+            if (snapshot.hasData) {
+              return const HomePage(); // Redirect to Home if authenticated
+            }
+
+            return LoginPage(); // Redirect to Login if not authenticated
+          },
+        ),
+      },
     );
   }
 }
