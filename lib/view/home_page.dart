@@ -1,82 +1,116 @@
 import 'package:flutter/material.dart';
-import 'gift_list_page.dart'; // Import Gift List Page
-import 'profile_page.dart'; // Import Profile Page
-import 'event_list_page.dart'; // Import Event List Page
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:the_project/controllers/auth_controller.dart';
+import '../models/auth_model.dart';
+import 'profile_page.dart';
+import 'event_list_page.dart'; // Import the Event List Page
+import '../controllers/home_controller.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+  const HomePage({super.key});
 
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  List<Map<String, dynamic>> _friends = List.generate(10, (index) => {
-    'name': 'Friend $index',
-    'profilePicture': 'https://via.placeholder.com/150',
-    'upcomingEvents': index % 2 == 0 ? 1 : 0,
-  });
+  final TextEditingController _searchController = TextEditingController();
+  final HomeController _homeController = HomeController();
+  final AuthController _auth = AuthController();
+
+  UserModel? _searchedUser;
+  List<UserModel> _friendList = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    _fetchFriendList();
   }
 
-  void _addFriendManually() {
-    final nameController = TextEditingController();
-    final phoneController = TextEditingController();
+  Future<void> _fetchFriendList() async {
+    setState(() => _isLoading = true);
+    try {
+      String? currentUserId = await _auth.getCurrentUser();
+      if (currentUserId != null) {
+        List<UserModel> friends = await _homeController.getFriendList(currentUserId);
+        setState(() {
+          _friendList = friends;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching friend list: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Add Friend Manually'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'Friend Name'),
-              ),
-              TextField(
-                controller: phoneController,
-                decoration: const InputDecoration(labelText: 'Phone Number'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                if (nameController.text.isNotEmpty) {
-                  setState(() {
-                    _friends.add({
-                      'name': nameController.text,
-                      'profilePicture': 'https://via.placeholder.com/150',
-                      'upcomingEvents': 0,
-                    });
-                  });
-                }
-                Navigator.pop(context);
-              },
-              child: const Text('Add Friend'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-          ],
+  Future<void> _searchUserByPhone() async {
+    final phone = _searchController.text.trim();
+    if (phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a phone number')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final user = await _homeController.searchUserByPhone(phone);
+      setState(() {
+        _searchedUser = user;
+      });
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No user found with this phone number')),
         );
-      },
-    );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error searching user: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
-  void _searchFriends(String query) {
-    setState(() {
-      _friends = _friends
-          .where((friend) =>
-          friend['name'].toLowerCase().contains(query.toLowerCase()))
-          .toList();
-    });
+  Future<void> _addFriend() async {
+    if (_searchedUser == null) return;
+
+    setState(() => _isLoading = true);
+    try {
+      String? currentUserId = await _auth.getCurrentUser();
+      if (currentUserId != null) {
+        await _homeController.addFriend(currentUserId, _searchedUser!.uid);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Friend added successfully!')),
+        );
+        setState(() {
+          _searchedUser = null;
+        });
+        _fetchFriendList();
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error adding friend: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // Sign out method
+  Future<void> _signOut() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      Navigator.pushReplacementNamed(context, '/login'); // Navigate to login page
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error signing out: $e')),
+      );
+    }
   }
 
   @override
@@ -86,6 +120,11 @@ class _HomePageState extends State<HomePage> {
         title: const Text('Hedieaty - Home'),
         backgroundColor: Colors.pinkAccent,
         actions: [
+          // Sign out icon button
+          IconButton(
+            icon: const Icon(Icons.exit_to_app),
+            onPressed: _signOut,
+          ),
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
@@ -95,91 +134,80 @@ class _HomePageState extends State<HomePage> {
               );
             },
           ),
-          TextButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const EventListPage()),
-              );
-            },
-            icon: const Icon(Icons.add, color: Colors.white),
-            label: const Text(
-              'Create Your Own Event/List',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          children: [
-            Padding(
-              padding:
-              const EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
-              child: Material(
-                elevation: 5.0,
-                shadowColor: Colors.pinkAccent,
-                borderRadius: BorderRadius.circular(12),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search for friends...',
-                    prefixIcon: const Icon(Icons.search, color: Colors.pinkAccent),
-                    border: OutlineInputBorder(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
+                    child: Material(
+                      elevation: 5.0,
+                      shadowColor: Colors.pinkAccent,
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                  onChanged: _searchFriends,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: _addFriendManually,
-              child: const Text('Add Friend Manually'),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _friends.length,
-                itemBuilder: (context, index) {
-                  return Card(
-                    margin:
-                    const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    elevation: 5.0,
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundImage:
-                        NetworkImage(_friends[index]['profilePicture']),
-                      ),
-                      title: Text(_friends[index]['name']),
-                      subtitle: Text(
-                        _friends[index]['upcomingEvents'] > 0
-                            ? 'Upcoming Events: ${_friends[index]['upcomingEvents']}'
-                            : 'No Upcoming Events',
-                      ),
-                      trailing: const Icon(Icons.arrow_forward_ios),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                GiftListPage(friendIndex: index),
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search for friends by phone number...',
+                          prefixIcon: const Icon(Icons.search, color: Colors.pinkAccent),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
                           ),
-                        );
-                      },
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        onSubmitted: (_) => _searchUserByPhone(),
+                      ),
                     ),
-                  );
-                },
+                  ),
+                  if (_searchedUser != null)
+                    ListTile(
+                      title: Text(_searchedUser!.name),
+                      subtitle: Text(_searchedUser!.phoneNumber),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.person_add),
+                        onPressed: _addFriend,
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Your Friends:',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  if (_friendList.isNotEmpty)
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: _friendList.length,
+                        itemBuilder: (context, index) {
+                          final friend = _friendList[index];
+                          return ListTile(
+                            title: Text(friend.name),
+                            subtitle: Text(friend.phoneNumber),
+                          );
+                        },
+                      ),
+                    )
+                  else
+                    const Center(
+                      child: Text('You have no friends yet.'),
+                    ),
+                ],
               ),
             ),
-          ],
-        ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const EventListPage()),
+          );
+        },
+        label: const Text('Create Your Own Event/List'),
+        icon: const Icon(Icons.add),
+        backgroundColor: Colors.pinkAccent,
       ),
     );
   }

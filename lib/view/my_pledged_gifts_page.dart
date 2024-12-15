@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'gift_details_page.dart'; // Import Gift Details Page
 
 class MyPledgedGiftsPage extends StatefulWidget {
-  const MyPledgedGiftsPage({Key? key}) : super(key: key);
+  const MyPledgedGiftsPage({super.key});
 
   @override
   _MyPledgedGiftsPageState createState() => _MyPledgedGiftsPageState();
@@ -33,19 +33,19 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
 
   // Function to modify a pending gift
   void _modifyGift(int index) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => GiftDetailsPage(giftDetails: pledgedGifts[index]),
-      ),
-    ).then((updatedGift) {
-      // Update the gift in the list if it was modified
-      if (updatedGift != null) {
-        setState(() {
-          pledgedGifts[index] = updatedGift;
-        });
-      }
-    });
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (context) => GiftDetailsPage(giftDetails: pledgedGifts[index]),
+    //   ),
+    // ).then((updatedGift) {
+    //   // Update the gift in the list if it was modified
+    //   if (updatedGift != null) {
+    //     setState(() {
+    //       pledgedGifts[index] = updatedGift;
+    //     });
+    //   }
+    // });
   }
 
   // Function to delete a pledged gift

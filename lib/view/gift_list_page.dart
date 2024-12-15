@@ -1,80 +1,113 @@
 import 'package:flutter/material.dart';
-import 'gift_details_page.dart'; // Import Gift Details Page
+import '../controllers/gift_list_controller.dart';
+import '../models/gift_model.dart';
+import 'gift_details_page.dart';
 
 class GiftListPage extends StatefulWidget {
-  final int friendIndex; // To identify which friend's list is being viewed
+  final String eventId;
 
-  const GiftListPage({Key? key, required this.friendIndex}) : super(key: key);
+  const GiftListPage({Key? key, required this.eventId}) : super(key: key);
 
   @override
   _GiftListPageState createState() => _GiftListPageState();
 }
 
 class _GiftListPageState extends State<GiftListPage> {
-  List<Map<String, dynamic>> _gifts = List.generate(5, (index) {
-    return {
-      'name': 'Gift $index',
-      'category': 'Category ${index % 3}',
-      'status': index % 2 == 0 ? 'Available' : 'Pledged',
-      'description': 'This is a description of Gift $index',
-      'price': (index + 1) * 10.0,
-    };
-  });
+  final GiftController _giftController = GiftController();
+  List<Gift> _gifts = [];
+  bool _isLoading = true;
 
-  int _sortColumnIndex = 0;
-  bool _isAscending = true;
-
-  void _sortGifts(int columnIndex, bool ascending) {
-    setState(() {
-      _sortColumnIndex = columnIndex;
-      _isAscending = ascending;
-      if (columnIndex == 0) {
-        _gifts.sort((a, b) => a['name'].compareTo(b['name']) * (ascending ? 1 : -1));
-      } else if (columnIndex == 1) {
-        _gifts.sort((a, b) => a['category'].compareTo(b['category']) * (ascending ? 1 : -1));
-      } else if (columnIndex == 2) {
-        _gifts.sort((a, b) => a['status'].compareTo(b['status']) * (ascending ? 1 : -1));
-      }
-    });
+  @override
+  void initState() {
+    super.initState();
+    _loadGifts();
   }
 
-  void _addGift() {
-    setState(() {
-      _gifts.add({
-        'name': 'New Gift',
-        'category': 'New Category',
-        'status': 'Available',
-        'description': 'New gift description',
-        'price': 20.0,
-      });
-    });
+  // Load gifts from Firestore
+  Future<void> _loadGifts() async {
+    setState(() => _isLoading = true);
+    _gifts = await _giftController.fetchGifts(widget.eventId);
+    setState(() => _isLoading = false);
   }
 
-  void _navigateToGiftDetails(int index) async {
-    final updatedGift = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => GiftDetailsPage(giftDetails: _gifts[index]),
-      ),
+  // Delete a gift
+  void _deleteGift(String id) async {
+    await _giftController.deleteGift(id);
+    _loadGifts();
+  }
+
+  // Show dialog to add or edit gift
+  Future<void> _editGiftDialog(Gift? gift) async {
+    TextEditingController nameController =
+        TextEditingController(text: gift?.name ?? '');
+    TextEditingController descriptionController =
+        TextEditingController(text: gift?.description ?? '');
+    TextEditingController categoryController =
+        TextEditingController(text: gift?.category ?? '');
+    TextEditingController priceController =
+        TextEditingController(text: gift?.price?.toString() ?? '0.0');
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(gift == null ? 'Add Gift' : 'Edit Gift'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Gift Name'),
+                ),
+                TextField(
+                  controller: descriptionController,
+                  decoration:
+                      const InputDecoration(labelText: 'Gift Description'),
+                ),
+                TextField(
+                  controller: categoryController,
+                  decoration: const InputDecoration(labelText: 'Category'),
+                ),
+                TextField(
+                  controller: priceController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Price'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final updatedGift = Gift(
+                  id: gift?.id ?? '',
+                  eventId: widget.eventId,
+                  name: nameController.text,
+                  description: descriptionController.text,
+                  category: categoryController.text,
+                  price: double.tryParse(priceController.text) ?? 0.0,
+                  pledged: gift?.pledged ?? false, // Maintain current pledged status
+                );
+
+                if (gift == null) {
+                  await _giftController.addGift(updatedGift, null);
+                } else {
+                  await _giftController.updateGift(updatedGift, null);
+                }
+
+                Navigator.pop(context);
+                _loadGifts();
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
     );
-
-    if (updatedGift != null) {
-      setState(() {
-        _gifts[index] = updatedGift;
-      });
-    }
-  }
-
-  void _deleteGift(int index) {
-    setState(() {
-      _gifts.removeAt(index);
-    });
-  }
-
-  void _togglePledgeStatus(int index) {
-    setState(() {
-      _gifts[index]['status'] = _gifts[index]['status'] == 'Available' ? 'Pledged' : 'Available';
-    });
   }
 
   @override
@@ -83,87 +116,51 @@ class _GiftListPageState extends State<GiftListPage> {
       appBar: AppBar(
         title: const Text('Gift List'),
         backgroundColor: Colors.pinkAccent,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _addGift,
-          ),
-        ],
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.white, Colors.pinkAccent],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.sort_by_alpha),
-                    onPressed: () {
-                      _sortGifts(0, !_isAscending);
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.category),
-                    onPressed: () {
-                      _sortGifts(1, !_isAscending);
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.sort),
-                    onPressed: () {
-                      _sortGifts(2, !_isAscending);
-                    },
-                  ),
-                ],
-              ),
-              Expanded(
-                child: ListView.builder(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _gifts.isEmpty
+              ? const Center(child: Text('No gifts available.'))
+              : ListView.builder(
                   itemCount: _gifts.length,
                   itemBuilder: (context, index) {
                     final gift = _gifts[index];
-                    return GestureDetector(
-                      onTap: () => _navigateToGiftDetails(index), // Navigate to Gift Details Page
-                      child: Card(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        child: ListTile(
-                          title: Text(gift['name']),
-                          subtitle: Text('${gift['category']} - ${gift['status']}'),
-                          tileColor: gift['status'] == 'Pledged' ? Colors.green[100] : null, // Color-coded based on pledge status
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit, color: Colors.blue),
-                                onPressed: () => _navigateToGiftDetails(index),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () => _deleteGift(index), // Call delete function
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.check, color: Colors.orange),
-                                onPressed: () => _togglePledgeStatus(index), // Call toggle status function
-                              ),
-                            ],
-                          ),
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      color: gift.pledged ? Colors.green.shade100 : null, // Color the card if pledged
+                      child: ListTile(
+                        title: Text(gift.name),
+                        subtitle: Text('Price: \$${gift.price.toString()}'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit),
+                              onPressed: () => _editGiftDialog(gift), // Edit through dialog
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _deleteGift(gift.id),
+                            ),
+                          ],
                         ),
+                        onTap: () {
+                          // Navigate to GiftDetailsPage when the card is tapped
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => GiftDetailsPage(gift: gift),
+                            ),
+                          );
+                        },
                       ),
                     );
                   },
                 ),
-              ),
-            ],
-          ),
-        ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _editGiftDialog(null), // Adding a new gift
+        tooltip: 'Add Gift',
+        child: const Icon(Icons.add),
       ),
     );
   }

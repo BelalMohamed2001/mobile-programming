@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'my_pledged_gifts_page.dart'; // Import My Pledged Gifts Page
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({Key? key}) : super(key: key);
+  const ProfilePage({super.key});
 
   @override
   _ProfilePageState createState() => _ProfilePageState();
@@ -110,8 +110,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   MaterialPageRoute(builder: (context) => const MyPledgedGiftsPage()),
                 );
               },
-              child: const Text('View My Pledged Gifts'),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.pinkAccent),
+              child: const Text('View My Pledged Gifts'),
             ),
           ],
         ),

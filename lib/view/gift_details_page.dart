@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import '../controllers/gift_list_controller.dart';
+import '../models/gift_model.dart';
 
 class GiftDetailsPage extends StatefulWidget {
-  final Map<String, dynamic> giftDetails; // To pass the gift details
+  final Gift gift;
 
-  const GiftDetailsPage({Key? key, required this.giftDetails}) : super(key: key);
+  const GiftDetailsPage({Key? key, required this.gift}) : super(key: key);
 
   @override
   _GiftDetailsPageState createState() => _GiftDetailsPageState();
@@ -16,47 +18,53 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
   late TextEditingController _categoryController;
   late TextEditingController _descriptionController;
   late TextEditingController _priceController;
-  bool _isPledged = false;
-  File? _imageFile; // Variable to store selected image file
+  late bool _isPledged;
+  File? _imageFile;
 
   final ImagePicker _picker = ImagePicker();
+  final GiftController _giftController = GiftController();
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.giftDetails['giftName']);
-    _categoryController = TextEditingController(text: widget.giftDetails['category']);
-    _descriptionController = TextEditingController(text: widget.giftDetails['description']);
-    _priceController = TextEditingController(text: widget.giftDetails['price'].toString());
-    _isPledged = widget.giftDetails['status'] == 'Pledged';
+    _nameController = TextEditingController(text: widget.gift.name);
+    _categoryController = TextEditingController(text: widget.gift.category);
+    _descriptionController = TextEditingController(text: widget.gift.description);
+    _priceController = TextEditingController(text: widget.gift.price.toString());
+    _isPledged = widget.gift.pledged;
   }
 
-  // Function to pick image from the gallery or camera
+  // Pick image from gallery
   Future<void> _pickImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery); // Gallery or Camera option
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
       setState(() {
-        _imageFile = File(pickedFile.path); // Save the image as File
+        _imageFile = File(pickedFile.path);
       });
     } else {
       print('No image selected');
     }
   }
 
-  // Function to save the changes (this could be extended to save in a database)
-  void _saveChanges() {
-    Map<String, dynamic> updatedGift = {
-      'giftName': _nameController.text,
-      'category': _categoryController.text,
-      'description': _descriptionController.text,
-      'price': _priceController.text,
-      'status': _isPledged ? 'Pledged' : 'Available',  // Ensure the correct status is saved
-      'image': _imageFile, // Save image file if changed
-    };
+  // Update pledge status in Firestore
+  Future<void> _togglePledged() async {
+    setState(() {
+      _isPledged = !_isPledged;  // Toggle pledge status
+    });
 
-    // Return the updated gift to the previous screen (Gift List Page)
-    Navigator.pop(context, updatedGift);  // Pass updated gift data back
+    final updatedGift = Gift(
+      id: widget.gift.id,
+      name: _nameController.text,
+      category: _categoryController.text,
+      description: _descriptionController.text,
+      price: double.tryParse(_priceController.text) ?? 0.0,
+      pledged: _isPledged,
+      eventId: widget.gift.eventId,
+      imageUrl: widget.gift.imageUrl,
+    );
+
+    await _giftController.updateGift(updatedGift, _imageFile); // Firestore update
   }
 
   @override
@@ -70,42 +78,33 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
         padding: const EdgeInsets.all(16.0),
         child: ListView(
           children: [
-            // Gift Name
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Gift Name'),
-              enabled: !_isPledged, // Disable if the gift is pledged
+              enabled: !_isPledged,  // Disable text field if pledged
             ),
             const SizedBox(height: 10),
-
-            // Category
             TextField(
               controller: _categoryController,
               decoration: const InputDecoration(labelText: 'Category'),
-              enabled: !_isPledged, // Disable if the gift is pledged
+              enabled: !_isPledged,  // Disable text field if pledged
             ),
             const SizedBox(height: 10),
-
-            // Description
             TextField(
               controller: _descriptionController,
               decoration: const InputDecoration(labelText: 'Description'),
-              enabled: !_isPledged, // Disable if the gift is pledged
+              enabled: !_isPledged,  // Disable text field if pledged
             ),
             const SizedBox(height: 10),
-
-            // Price
             TextField(
               controller: _priceController,
               decoration: const InputDecoration(labelText: 'Price'),
               keyboardType: TextInputType.number,
-              enabled: !_isPledged, // Disable if the gift is pledged
+              enabled: !_isPledged,  // Disable text field if pledged
             ),
             const SizedBox(height: 10),
-
-            // Image Upload
             GestureDetector(
-              onTap: _isPledged ? null : _pickImage, // Disable image upload for pledged gifts
+              onTap: _isPledged ? null : _pickImage,  // Disable image picking if pledged
               child: Container(
                 height: 150,
                 decoration: BoxDecoration(
@@ -113,37 +112,25 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: _imageFile == null
-                    ? const Center(child: Icon(Icons.camera_alt))
+                    ? (widget.gift.imageUrl == null
+                        ? const Center(child: Icon(Icons.camera_alt))
+                        : Image.network(widget.gift.imageUrl!, fit: BoxFit.cover))
                     : Image.file(_imageFile!, fit: BoxFit.cover),
               ),
             ),
             const SizedBox(height: 20),
-
-            // Pledge Status (Available / Pledged)
             Row(
               children: [
                 const Text('Pledged'),
                 Switch(
                   value: _isPledged,
                   onChanged: (value) {
-                    // Allow toggle between Available and Pledged
-                    setState(() {
-                      _isPledged = value;
-                    });
+                    _togglePledged(); // Toggle pledge status and update Firestore
                   },
                   activeColor: Colors.green,
+                  inactiveThumbColor: Colors.red,
                 ),
               ],
-            ),
-            const SizedBox(height: 20),
-
-            // Save Button
-            ElevatedButton(
-              onPressed: _saveChanges,
-              child: const Text('Save Changes'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.pinkAccent,
-              ),
             ),
           ],
         ),
