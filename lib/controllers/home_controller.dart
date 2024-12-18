@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:the_project/controllers/notification_controller.dart';
 import '../models/auth_model.dart';
+import '../models/event_model.dart';
+import '../models/gift_model.dart';
 
 class HomeController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
+  final NotificationController _notificationController = NotificationController();
   // Fetch user by ID
   Future<UserModel?> getUserById(String userId) async {
     try {
@@ -35,84 +38,119 @@ class HomeController {
     return null;
   }
 
-  // Add friend logic
-  // Add friend function in HomeController:
-Future<void> addFriend(String currentUserId, String friendId) async {
-  print("this is the current user: $currentUserId");
-  print("this is the friend: $friendId");
+  // Add friend
+  Future<void> addFriend(String currentUserId, String friendId) async {
+    print("Current user: $currentUserId");
+    print("Friend user: $friendId");
 
-  try {
-    // Reference the users collection
-    final currentUserRef = _firestore.collection('users').doc(currentUserId);
-    final friendUserRef = _firestore.collection('users').doc(friendId);
+    try {
+      final currentUserRef = _firestore.collection('users').doc(currentUserId);
+      final friendUserRef = _firestore.collection('users').doc(friendId);
 
-    // Fetch the documents and convert them to UserModel
-    DocumentSnapshot currentUserSnapshot = await currentUserRef.get();
-    DocumentSnapshot friendUserSnapshot = await friendUserRef.get();
+      final currentUserSnapshot = await currentUserRef.get();
+      final friendUserSnapshot = await friendUserRef.get();
 
-    // Check if the documents exist
-    if (currentUserSnapshot.exists && friendUserSnapshot.exists) {
-      // Convert DocumentSnapshots to UserModels
-      UserModel currentUser = UserModel.fromFirestore(currentUserSnapshot);
-      UserModel friendUser = UserModel.fromFirestore(friendUserSnapshot);
+      if (currentUserSnapshot.exists && friendUserSnapshot.exists) {
+        UserModel currentUser = UserModel.fromFirestore(currentUserSnapshot);
+        UserModel friendUser = UserModel.fromFirestore(friendUserSnapshot);
 
-      // Get the current friend lists, or initialize as empty
-      List<String> currentUserFriends = List<String>.from(currentUser.friendList);
-      List<String> friendUserFriends = List<String>.from(friendUser.friendList);
+        List<String> currentUserFriends = List<String>.from(currentUser.friendList);
+        List<String> friendUserFriends = List<String>.from(friendUser.friendList);
 
-      // Add friend if not already added
-      if (!currentUserFriends.contains(friendId)) {
-        currentUserFriends.add(friendId);
+        if (!currentUserFriends.contains(friendId)) {
+          currentUserFriends.add(friendId);
+        }
+
+        if (!friendUserFriends.contains(currentUserId)) {
+          friendUserFriends.add(currentUserId);
+        }
+
+        await currentUserRef.update({'friendList': currentUserFriends});
+        await friendUserRef.update({'friendList': friendUserFriends});
+
+        print('Friend added successfully!');
+      } else {
+        print('One or both users do not exist.');
       }
-
-      if (!friendUserFriends.contains(currentUserId)) {
-        friendUserFriends.add(currentUserId);
-      }
-
-      // Update the user documents in Firestore without using transactions
-      await currentUserRef.update({'friendList': currentUserFriends});
-      await friendUserRef.update({'friendList': friendUserFriends});
-
-      print('Friend added successfully!');
-    } else {
-      print('One or both users do not exist in the database.');
+    } catch (e) {
+      print('Error adding friend: $e');
+      throw Exception("Failed to add friend: $e");
     }
-  } catch (e) {
-    print('Error adding friend: $e');
-    throw Exception("Failed to add friend: $e"); // Handle the error properly
   }
-}
 
   // Get current user's friend list
-Future<List<UserModel>> getFriendList(String userId) async {
-  try {
-    // Fetch the user document to get the friend list
-    final userDoc = await _firestore.collection('users').doc(userId).get();
+  Future<List<UserModel>> getFriendList(String userId) async {
+    try {
+      final userDoc = await _firestore.collection('users').doc(userId).get();
 
-    // Check if the document exists
-    if (userDoc.exists) {
-      // Get the friend list (array of friend user IDs)
-      List<String> friendIds = List<String>.from(userDoc.data()?['friendList'] ?? []);
+      if (userDoc.exists) {
+        List<String> friendIds = List<String>.from(userDoc.data()?['friendList'] ?? []);
+        List<UserModel> friends = [];
 
-      // Create a list to store the friend models
-      List<UserModel> friends = [];
+        for (String friendId in friendIds) {
+          final friendDoc = await _firestore.collection('users').doc(friendId).get();
 
-      // Loop through friend IDs and fetch their corresponding user data
-      for (String friendId in friendIds) {
-        final friendDoc = await _firestore.collection('users').doc(friendId).get();
-        
-        if (friendDoc.exists) {
-          // Create a UserModel from the friend document and add to the list
-          friends.add(UserModel.fromFirestore(friendDoc));
+          if (friendDoc.exists) {
+            friends.add(UserModel.fromFirestore(friendDoc));
+          }
         }
+        return friends;
       }
-      return friends;
+    } catch (e) {
+      print('Error fetching friend list: $e');
     }
-  } catch (e) {
-    print('Error fetching friend list: $e');
+    return [];
   }
-  return [];
+
+  // Fetch all events associated with a friend's userId
+  Future<List<EventModel>> getFriendEvents(String friendId) async {
+    try {
+      QuerySnapshot eventsSnapshot = await _firestore
+          .collection('events')
+          .where('userId', isEqualTo: friendId)
+          .get();
+
+      return eventsSnapshot.docs
+          .map((doc) => EventModel.fromFirestore(doc.data() as Map<String, dynamic>, doc.id))
+          .toList();
+    } catch (e) {
+      print('Error fetching friend events: $e');
+      throw Exception('Error fetching friend events: $e');
+    }
+  }
+
+  // Fetch all gifts associated with a specific eventId
+  Future<List<Gift>> getGiftsForEvent(String eventId) async {
+    try {
+      QuerySnapshot giftsSnapshot = await _firestore
+          .collection('gifts')
+          .where('eventId', isEqualTo: eventId)
+          .get();
+
+      return giftsSnapshot.docs
+          .map((doc) => Gift.fromFirestore(doc))
+          .toList();
+    } catch (e) {
+      print('Error fetching gifts: $e');
+      throw Exception('Error fetching gifts: $e');
+    }
+  }
+
+
+Future<void> pledgeGift(String giftId, String creatorId) async {
+  try {
+    await _firestore.collection('gifts').doc(giftId).update({
+      'pledged': true,
+    });
+
+    // Send a notification to the gift creator
+    final message = 'Someone has pledged to buy your gift!';
+    await _notificationController.sendNotification(creatorId, giftId, message);
+  } catch (e) {
+    throw Exception('Error pledging gift: $e');
+  }
 }
+
 
 
 }

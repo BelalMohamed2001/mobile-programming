@@ -56,8 +56,7 @@ class AuthController {
         DocumentSnapshot userDoc =
             await _firestore.collection('users').doc(user.uid).get();
         if (userDoc.exists) {
-          return UserModel.fromFirestore(
-              userDoc); // Using the fromFirestore method to get the user data
+          return UserModel.fromFirestore(userDoc); // Parse Firestore document
         }
       }
       return null;
@@ -66,9 +65,32 @@ class AuthController {
     }
   }
 
+  // Fetch user profile by UID
+  Future<UserModel?> getUserProfile(String userId) async {
+    try {
+      DocumentSnapshot userDoc =
+          await _firestore.collection('users').doc(userId).get();
+      if (userDoc.exists) {
+        return UserModel.fromFirestore(userDoc); // Parse Firestore document
+      }
+      throw Exception('User profile not found');
+    } catch (e) {
+      throw Exception('Failed to fetch user profile: $e');
+    }
+  }
+
   // Sign Out the current user
   Future<void> signOut() async {
     await _auth.signOut();
+  }
+
+  // Update the user's information
+  Future<void> updateUser(UserModel user) async {
+    try {
+      await _firestore.collection('users').doc(user.uid).update(user.toMap());
+    } catch (e) {
+      throw Exception('Failed to update user: $e');
+    }
   }
 
   // Stream to listen to the authentication state
@@ -79,19 +101,21 @@ class AuthController {
         DocumentSnapshot userDoc =
             await _firestore.collection('users').doc(user.uid).get();
         if (userDoc.exists) {
-          return UserModel.fromFirestore(userDoc); // Using fromFirestore here
+          return UserModel.fromFirestore(userDoc); // Parse Firestore document
         }
       }
       return null;
     });
   }
 
+  // Fetch the current user's UID
   Future<String?> getCurrentUser() async {
     try {
-      // Get the current FirebaseAuth user
       User? user = _auth.currentUser;
-
-      return user!.uid;
+      if (user != null) {
+        return user.uid;
+      }
+      throw Exception('No user is currently signed in');
     } catch (e) {
       throw Exception('Failed to fetch current user: $e');
     }

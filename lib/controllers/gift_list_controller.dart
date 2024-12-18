@@ -6,8 +6,25 @@ import '../models/gift_model.dart';
 class GiftController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
+  final CollectionReference _giftsCollection =
+      FirebaseFirestore.instance.collection('gifts');
 
-  // Fetch gifts for an event from Firestore
+
+  // Fetch gifts by user ID
+  Future<List<Gift>> getGiftsByUser(String userId) async {
+    final querySnapshot = await _giftsCollection.where('eventId', isEqualTo: userId).get();
+    return querySnapshot.docs
+        .map((doc) => Gift.fromFirestore(doc))
+        .toList();
+  }
+
+  // Pledge a gift (mark as pledged in Firestore)
+  Future<void> pledgeGift(String giftId) async {
+    await _giftsCollection.doc(giftId).update({'pledged': true});
+  }
+
+
+  /// Fetch gifts associated with an event by `eventId`.
   Future<List<Gift>> fetchGifts(String eventId) async {
     try {
       QuerySnapshot snapshot = await _firestore
@@ -17,59 +34,84 @@ class GiftController {
 
       return snapshot.docs.map((doc) => Gift.fromFirestore(doc)).toList();
     } catch (e) {
-      print('Error fetching gifts: $e');
-      return [];
+      throw Exception('Error fetching gifts: $e');
     }
   }
 
-  // Add new gift to Firestore
+  /// Fetch gifts created or pledged by a specific user by `userId`.
+  Future<List<Gift>> fetchGiftsForUser(String userId) async {
+    try {
+      QuerySnapshot snapshot = await _firestore
+          .collection('gifts')
+          .where('userId',
+              isEqualTo: userId) // Assuming `userId` ties the gift to the user.
+          .get();
+
+      return snapshot.docs.map((doc) => Gift.fromFirestore(doc)).toList();
+    } catch (e) {
+      throw Exception('Error fetching gifts for user: $e');
+    }
+  }
+
+  /// Add a new gift to Firestore. Optional `imageFile` allows for image uploading.
   Future<void> addGift(Gift gift, File? imageFile) async {
-    String? imageUrl;
+    try {
+      String? imageUrl;
 
-    if (imageFile != null) {
-      imageUrl = await _uploadImage(imageFile, gift.name);
+      if (imageFile != null) {
+        imageUrl = await _uploadImage(imageFile, gift.name);
+      }
+
+      final giftData = gift.toMap();
+      if (imageUrl != null) {
+        giftData['imageUrl'] = imageUrl;
+      }
+
+      await _firestore.collection('gifts').add(giftData);
+    } catch (e) {
+      throw Exception('Error adding gift: $e');
     }
-
-    final giftData = gift.toMap();
-    if (imageUrl != null) {
-      giftData['imageUrl'] = imageUrl;
-    }
-
-    await _firestore.collection('gifts').add(giftData);
   }
 
-  // Delete a gift
+  /// Delete an existing gift by its Firestore document `giftId`.
   Future<void> deleteGift(String giftId) async {
     try {
       await _firestore.collection('gifts').doc(giftId).delete();
     } catch (e) {
-      print('Error deleting gift: $e');
+      throw Exception('Error deleting gift: $e');
     }
   }
 
-  // Edit gift details
+  /// Update an existing gift's details. Optional `imageFile` allows for image replacement.
   Future<void> updateGift(Gift gift, File? imageFile) async {
-    String? imageUrl;
+    try {
+      String? imageUrl;
 
-    if (imageFile != null) {
-      imageUrl = await _uploadImage(imageFile, gift.name);
+      if (imageFile != null) {
+        imageUrl = await _uploadImage(imageFile, gift.name);
+      }
+
+      final giftData = gift.toMap();
+      if (imageUrl != null) {
+        giftData['imageUrl'] = imageUrl;
+      }
+
+      await _firestore.collection('gifts').doc(gift.id).update(giftData);
+    } catch (e) {
+      throw Exception('Error updating gift: $e');
     }
-
-    final giftData = gift.toMap();
-    if (imageUrl != null) {
-      giftData['imageUrl'] = imageUrl;
-    }
-
-    await _firestore.collection('gifts').doc(gift.id).update(giftData);
   }
 
-  // Private method to upload an image to Firebase Storage
+  /// Helper method to upload an image to Firebase Storage and return the download URL.
   Future<String> _uploadImage(File imageFile, String giftName) async {
-    final storageRef = _storage
-        .ref()
-        .child('gift_images/${DateTime.now().millisecondsSinceEpoch}_$giftName.jpg');
-    final uploadTask = storageRef.putFile(imageFile);
-    final taskSnapshot = await uploadTask;
-    return await taskSnapshot.ref.getDownloadURL();
+    try {
+      final storageRef = _storage.ref().child(
+          'gift_images/${DateTime.now().millisecondsSinceEpoch}_$giftName.jpg');
+      final uploadTask = storageRef.putFile(imageFile);
+      final taskSnapshot = await uploadTask;
+      return await taskSnapshot.ref.getDownloadURL();
+    } catch (e) {
+      throw Exception('Error uploading image: $e');
+    }
   }
 }
