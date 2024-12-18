@@ -6,6 +6,7 @@ class Gift {
   final String category;
   final double price;
   final bool pledged; // true if gift is pledged, false otherwise
+  final String? pledgedBy; // User ID of the person who pledged it, or null if unpledged
   final String eventId;
   final String description;
   final String? imageUrl; // Optional field to store image URL
@@ -17,6 +18,7 @@ class Gift {
     required this.category,
     required this.price,
     required this.pledged,
+    this.pledgedBy, // Make it optional to handle cases where the gift isn't pledged
     required this.eventId,
     required this.description,
     this.imageUrl,
@@ -32,6 +34,7 @@ class Gift {
       category: data['category'],
       price: data['price'],
       pledged: data['pledged'],
+      pledgedBy: data['pledgedBy'], // Extract the pledgedBy field
       eventId: data['eventId'],
       description: data['description'],
       imageUrl: data['imageUrl'],
@@ -45,9 +48,11 @@ class Gift {
       'category': category,
       'price': price,
       'pledged': pledged,
+      'pledgedBy': pledgedBy, // Include pledgedBy field in Firestore map
       'eventId': eventId,
       'description': description,
       'imageUrl': imageUrl,
     };
   }
+  
 }
