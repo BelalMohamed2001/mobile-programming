@@ -6,8 +6,9 @@ import '../models/gift_model.dart';
 
 class GiftDetailsPage extends StatefulWidget {
   final Gift gift;
+  final Function(Gift) onGiftUpdated; // Callback to notify changes in the gift
 
-  const GiftDetailsPage({Key? key, required this.gift}) : super(key: key);
+  const GiftDetailsPage({Key? key, required this.gift, required this.onGiftUpdated}) : super(key: key);
 
   @override
   _GiftDetailsPageState createState() => _GiftDetailsPageState();
@@ -34,23 +35,18 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
     _isPledged = widget.gift.pledged;
   }
 
-  // Pick image from gallery
   Future<void> _pickImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-
     if (pickedFile != null) {
       setState(() {
         _imageFile = File(pickedFile.path);
       });
-    } else {
-      print('No image selected');
     }
   }
 
-  // Update pledge status in Firestore
   Future<void> _togglePledged() async {
     setState(() {
-      _isPledged = !_isPledged;  // Toggle pledge status
+      _isPledged = !_isPledged;
     });
 
     final updatedGift = Gift(
@@ -64,7 +60,8 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
       imageUrl: widget.gift.imageUrl,
     );
 
-    await _giftController.updateGift(updatedGift, _imageFile); // Firestore update
+    await _giftController.updateGift(updatedGift, _imageFile);
+    widget.onGiftUpdated(updatedGift); // Notify the GiftListPage of the change
   }
 
   @override
@@ -81,30 +78,26 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Gift Name'),
-              enabled: !_isPledged,  // Disable text field if pledged
+              enabled: !_isPledged,
             ),
-            const SizedBox(height: 10),
             TextField(
               controller: _categoryController,
               decoration: const InputDecoration(labelText: 'Category'),
-              enabled: !_isPledged,  // Disable text field if pledged
+              enabled: !_isPledged,
             ),
-            const SizedBox(height: 10),
             TextField(
               controller: _descriptionController,
               decoration: const InputDecoration(labelText: 'Description'),
-              enabled: !_isPledged,  // Disable text field if pledged
+              enabled: !_isPledged,
             ),
-            const SizedBox(height: 10),
             TextField(
               controller: _priceController,
               decoration: const InputDecoration(labelText: 'Price'),
               keyboardType: TextInputType.number,
-              enabled: !_isPledged,  // Disable text field if pledged
+              enabled: !_isPledged,
             ),
-            const SizedBox(height: 10),
             GestureDetector(
-              onTap: _isPledged ? null : _pickImage,  // Disable image picking if pledged
+              onTap: _isPledged ? null : _pickImage,
               child: Container(
                 height: 150,
                 decoration: BoxDecoration(
@@ -125,7 +118,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                 Switch(
                   value: _isPledged,
                   onChanged: (value) {
-                    _togglePledged(); // Toggle pledge status and update Firestore
+                    _togglePledged();
                   },
                   activeColor: Colors.green,
                   inactiveThumbColor: Colors.red,

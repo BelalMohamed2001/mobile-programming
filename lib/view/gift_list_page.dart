@@ -136,20 +136,32 @@ class _GiftListPageState extends State<GiftListPage> {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.edit),
-                              onPressed: () => _editGiftDialog(gift), // Edit through dialog
+                              onPressed: gift.pledged
+                                  ? null // Disable edit if pledged
+                                  : () => _editGiftDialog(gift),
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteGift(gift.id),
+                              onPressed: gift.pledged
+                                  ? null // Disable delete if pledged
+                                  : () => _deleteGift(gift.id),
                             ),
                           ],
                         ),
                         onTap: () {
-                          // Navigate to GiftDetailsPage when the card is tapped
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => GiftDetailsPage(gift: gift),
+                              builder: (context) => GiftDetailsPage(
+                                gift: gift,
+                                onGiftUpdated: (updatedGift) {
+                                  setState(() {
+                                    // Update the gift locally in the list
+                                    final index = _gifts.indexWhere((g) => g.id == updatedGift.id);
+                                    if (index != -1) _gifts[index] = updatedGift;
+                                  });
+                                },
+                              ),
                             ),
                           );
                         },

@@ -3,8 +3,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:the_project/controllers/auth_controller.dart';
 import '../models/auth_model.dart';
 import 'profile_page.dart';
-import 'event_list_page.dart'; // Import the Event List Page
+import 'event_list_page.dart';
+import 'giftlist_friends.dart'; // Import the GiftListScreen
 import '../controllers/home_controller.dart';
+import 'package:the_project/controllers/notification_controller.dart';
+import 'package:the_project/models/notification_model.dart';
+import 'dart:async';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -17,15 +21,55 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
   final HomeController _homeController = HomeController();
   final AuthController _auth = AuthController();
+  final NotificationController _notificationController = NotificationController();
+  late StreamSubscription<List<NotificationModel>> _notificationSubscription; // Notification listener
 
   UserModel? _searchedUser;
   List<UserModel> _friendList = [];
   bool _isLoading = false;
 
+ @override
+void initState() {
+  super.initState();
+  _fetchFriendList();
+  
+  // Fetch the current user ID asynchronously
+  _initializeNotifications();
+}
+
+Future<void> _initializeNotifications() async {
+  String? currentUserId = await _auth.getCurrentUser(); // Get current user ID
+  if (currentUserId != null) {
+    // Now it's safe to use currentUserId since it is resolved
+    _notificationSubscription = _notificationController.listenForUserNotifications(currentUserId).listen((notifications) {
+      for (var notification in notifications) {
+        if (!notification.isRead) {
+          // Show popup when a new notification arrives
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text('New Notification!'),
+              content: Text(notification.message),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    });
+  }
+}
+
+
   @override
-  void initState() {
-    super.initState();
-    _fetchFriendList();
+  void dispose() {
+    super.dispose();
+    // Cancel notification subscription when not needed
+    _notificationSubscription.cancel();
   }
 
   Future<void> _fetchFriendList() async {
@@ -101,11 +145,10 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // Sign out method
   Future<void> _signOut() async {
     try {
       await FirebaseAuth.instance.signOut();
-      Navigator.pushReplacementNamed(context, '/login'); // Navigate to login page
+      Navigator.pushReplacementNamed(context, '/login');
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error signing out: $e')),
@@ -120,7 +163,6 @@ class _HomePageState extends State<HomePage> {
         title: const Text('Hedieaty - Home'),
         backgroundColor: Colors.pinkAccent,
         actions: [
-          // Sign out icon button
           IconButton(
             icon: const Icon(Icons.exit_to_app),
             onPressed: _signOut,
@@ -187,6 +229,18 @@ class _HomePageState extends State<HomePage> {
                           return ListTile(
                             title: Text(friend.name),
                             subtitle: Text(friend.phoneNumber),
+                            trailing: const Icon(Icons.arrow_forward),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => GiftListScreen(
+                                    friendId: friend.uid,
+                                    friendName: friend.name,
+                                  ),
+                                ),
+                              );
+                            },
                           );
                         },
                       ),
