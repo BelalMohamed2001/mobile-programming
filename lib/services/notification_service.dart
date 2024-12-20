@@ -9,7 +9,7 @@ class NotificationService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   
-  bool hasShownNotification = false; // To track whether a notification was already shown
+  bool hasShownNotification = false; 
   
   Future<void> initNotifications() async {
     // Android-specific initialization
@@ -36,22 +36,22 @@ class NotificationService {
       },
     );
 
-    // Listen for user changes and handle notification states accordingly
+    
     _auth.authStateChanges().listen((User? user) {
       if (user != null) {
-        hasShownNotification = false;  // Reset flag for each new session
+        hasShownNotification = false;  
         _listenForNotifications(user.uid);
       } else {
-        hasShownNotification = false;  // Reset global flag if logged out
+        hasShownNotification = false;  
       }
     });
   }
 
-  // Start listening for notifications based on user ID
+  
   void _listenForNotifications(String userId) {
     _firestore.collection('notifications')
         .where('userId', isEqualTo: userId)
-        .where('isRead', isEqualTo: false) // Only un-read notifications
+        .where('isRead', isEqualTo: false) 
         .snapshots()
         .listen((snapshot) {
       for (var doc in snapshot.docs) {
@@ -59,19 +59,18 @@ class NotificationService {
         String title = data['title'] ?? 'New gift pledged';
         String body = data['message'] ?? '';
 
-        // Show notification only if it hasn't been shown yet
+        
         if (!hasShownNotification) {
           _showNotification(title, body, doc.id);
-          hasShownNotification = true;  // Make sure it doesn't show again
-          _markAsRead(doc.id); // Mark as read in Firestore
+          hasShownNotification = true;  
+          _markAsRead(doc.id); 
         }
       }
     });
   }
 
-  // Show the local notification
   Future<void> _showNotification(String title, String body, String payload) async {
-    // Android notification settings
+    
     const androidDetails = AndroidNotificationDetails(
       'gift_channel',
       'Gift Notifications',
@@ -81,7 +80,6 @@ class NotificationService {
       icon: 'giftbox',
     );
 
-    // iOS notification settings
     const iosDetails = DarwinNotificationDetails();
 
     final details = NotificationDetails(
@@ -89,7 +87,7 @@ class NotificationService {
       iOS: iosDetails,
     );
 
-    // Show notification
+    
     await _notificationsPlugin.show(
       0,
       title,
@@ -99,7 +97,7 @@ class NotificationService {
     );
   }
 
-  // Handle notification tap (open the relevant screen)
+  
   void _handleNotificationTap(String? payload) {
     if (payload != null) {
       Navigator.pushNamed(
@@ -117,16 +115,16 @@ class NotificationService {
         .update({'isRead': true});
   }
 
-  // Add a new notification in Firestore after a new pledge (to ensure uniqueness)
+  
   Future<void> sendNotification(String userId, String giftId, String message) async {
-    // Check if this notification already exists
+   
     var existingNotification = await _firestore.collection('notifications')
         .where('giftId', isEqualTo: giftId)
         .where('userId', isEqualTo: userId)
-        .where('isRead', isEqualTo: false) // Do not send duplicates
+        .where('isRead', isEqualTo: false) 
         .get();
 
-    // Only send notification if it is unique
+    
     if (existingNotification.docs.isEmpty) {
       await _firestore.collection('notifications').add({
         'userId': userId,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/event_controller.dart';
-import '../controllers/gift_list_controller.dart';
+
 import '../models/event_model.dart';
 import '../models/gift_model.dart';
 import '../models/auth_model.dart';
@@ -17,7 +17,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final AuthController _authController = AuthController();
   final EventController _eventController = EventController();
-  final GiftController _giftController = GiftController();
+  
 
   UserModel? _currentUser;
   List<Map<String, dynamic>> _eventsWithGifts = [];
@@ -30,7 +30,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _fetchUserProfile();
   }
 
-  /// Fetches and updates user profile information
+  
   Future<void> _fetchUserProfile() async {
     setState(() => _isLoading = true);
     try {
@@ -56,7 +56,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  /// Edits user profile information
+  
   Future<void> _editProfileField(String field, String value) async {
     if (_currentUser != null) {
       UserModel updatedUser = UserModel(
@@ -74,7 +74,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  /// Toggles notifications
+ 
   void _toggleNotifications(bool value) {
     setState(() => notificationsEnabled = value);
   }
@@ -136,7 +136,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
 
           const SizedBox(height: 20),
-          // Created Events and Associated Gifts
+         
           const Text(
             'Your Created Events and Gifts',
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
@@ -147,13 +147,16 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 20),
           // My Pledged Gifts Button
           ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const MyPledgedGiftsPage(),
-                ),
-              );
+            onPressed: () async {
+              final userId = await _authController.getCurrentUser(); 
+              if (userId != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MyPledgedGiftsPage(userId: userId), 
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.pinkAccent),
             child: const Text('View My Pledged Gifts'),
@@ -163,7 +166,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  /// Builds a single editable field
+  
   Widget _buildEditableField(String field, String? value) {
     return ListTile(
       title: Text(field),
@@ -180,7 +183,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  /// Displays a list of user events and associated gifts
+  
   Widget _buildEventList() {
     if (_eventsWithGifts.isEmpty) {
       return const Text('You have no events created.');
@@ -217,7 +220,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  /// Shows the dialog for editing user info fields
+  
   Future<String?> _showEditDialog(String field, String currentValue) async {
     String updatedValue = currentValue;
     return showDialog<String>(context: context, builder: (context) {

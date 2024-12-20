@@ -44,7 +44,7 @@ class GiftController {
       QuerySnapshot snapshot = await _firestore
           .collection('gifts')
           .where('userId',
-              isEqualTo: userId) // Assuming `userId` ties the gift to the user.
+              isEqualTo: userId) 
           .get();
 
       return snapshot.docs.map((doc) => Gift.fromFirestore(doc)).toList();
@@ -53,7 +53,7 @@ class GiftController {
     }
   }
 
-  /// Add a new gift to Firestore. Optional `imageFile` allows for image uploading.
+  
   Future<void> addGift(Gift gift, File? imageFile) async {
     try {
       String? imageUrl;
@@ -73,7 +73,6 @@ class GiftController {
     }
   }
 
-  /// Delete an existing gift by its Firestore document `giftId`.
   Future<void> deleteGift(String giftId) async {
     try {
       await _firestore.collection('gifts').doc(giftId).delete();
@@ -82,7 +81,7 @@ class GiftController {
     }
   }
 
-  /// Update an existing gift's details. Optional `imageFile` allows for image replacement.
+  
   Future<void> updateGift(Gift gift, File? imageFile) async {
     try {
       String? imageUrl;
@@ -102,7 +101,6 @@ class GiftController {
     }
   }
 
-  /// Helper method to upload an image to Firebase Storage and return the download URL.
   Future<String> _uploadImage(File imageFile, String giftName) async {
     try {
       final storageRef = _storage.ref().child(

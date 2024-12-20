@@ -8,7 +8,7 @@ class SignupPage extends StatelessWidget {
   final TextEditingController _phoneNumberController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
 
-  SignupPage({super.key});  // Added for name input
+  SignupPage({super.key});  
 
   void _signUp(BuildContext context) async {
     try {
@@ -16,7 +16,7 @@ class SignupPage extends StatelessWidget {
         _emailController.text.trim(),
         _passwordController.text.trim(),
         _phoneNumberController.text.trim(),
-        _nameController.text.trim(),  // Pass the name value
+        _nameController.text.trim(), 
       );
       if (user != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -44,7 +44,7 @@ class SignupPage extends StatelessWidget {
                 elevation: 5,
                 margin: const EdgeInsets.only(bottom: 20),
                 child: TextField(
-                  controller: _nameController,  // New name input field
+                  controller: _nameController,  
                   decoration: const InputDecoration(
                     prefixIcon: Icon(Icons.person),
                     labelText: 'Full Name',

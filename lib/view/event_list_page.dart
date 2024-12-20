@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../controllers/event_controller.dart';
 import '../models/event_model.dart';
-import 'gift_list_page.dart';  // Import GiftListPage
+import 'gift_list_page.dart';  
 
 class EventListPage extends StatefulWidget {
   const EventListPage({super.key});
@@ -31,12 +31,12 @@ class _EventListPageState extends State<EventListPage> {
     setState(() => _isLoading = true);
     if (_currentUser != null) {
       _events = await _eventController.fetchEvents(_currentUser!.uid);
-      _sortEvents(0, true); // Default sorting by name in ascending order
+      _sortEvents(0, true); 
     }
     setState(() => _isLoading = false);
   }
 
-  // Sort events based on selected index and order
+  
   void _sortEvents(int index, bool isAscending) {
     setState(() {
       if (index == 0) {
@@ -145,7 +145,7 @@ class _EventListPageState extends State<EventListPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => GiftListPage(eventId: event.id), // Pass the event id to GiftListPage
+        builder: (context) => GiftListPage(eventId: event.id), 
       ),
     );
   }

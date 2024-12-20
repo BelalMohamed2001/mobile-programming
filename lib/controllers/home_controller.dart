@@ -3,10 +3,11 @@ import 'package:the_project/controllers/notification_controller.dart';
 import '../models/auth_model.dart';
 import '../models/event_model.dart';
 import '../models/gift_model.dart';
-
+import '../controllers/auth_controller.dart';
 class HomeController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final NotificationController _notificationController = NotificationController();
+
   // Fetch user by ID
   Future<UserModel?> getUserById(String userId) async {
     try {
@@ -136,8 +137,8 @@ class HomeController {
     }
   }
 
-
-Future<void> pledgeGift(String giftId, String creatorId) async {
+  // Pledge a gift
+  Future<void> pledgeGift(String giftId, String creatorId) async {
   try {
     // Check if this gift has already been pledged
     final giftDoc = await _firestore.collection('gifts').doc(giftId).get();
@@ -145,9 +146,16 @@ Future<void> pledgeGift(String giftId, String creatorId) async {
       throw Exception('Gift already pledged!');
     }
 
+    // Get current user UID
+    String? currentUserId = await AuthController().getCurrentUser();
+    if (currentUserId == null) {
+      throw Exception('No current user found');
+    }
+
     // Update the gift status as pledged
     await _firestore.collection('gifts').doc(giftId).update({
       'pledged': true,
+      'pledgedBy': currentUserId, // Set the resolved UID here
     });
 
     // Create a new notification entry, if not already sent
@@ -168,8 +176,82 @@ Future<void> pledgeGift(String giftId, String creatorId) async {
     throw Exception('Error pledging gift: $e');
   }
 }
+  // Get the friend who owns the gift that the user pledged
+  Future<UserModel?> getFriendOwnsGift(String userId, String giftId) async {
+    try {
+      // Fetch the gift information based on the pledged giftId
+      final giftDoc = await _firestore.collection('gifts').doc(giftId).get();
+
+      if (!giftDoc.exists) {
+        print("Gift does not exist.");
+        return null;
+      }
+
+      // Get gift details and check if it has a pledged user
+      Gift gift = Gift.fromFirestore(giftDoc);
+      if (!gift.pledged || gift.pledgedBy != userId) {
+        print("No matching pledged gift found for the user.");
+        return null;
+      }
+
+      // Fetch the event associated with this gift
+      final eventDoc = await _firestore.collection('events').doc(gift.eventId).get();
+      if (!eventDoc.exists) {
+        print("Event related to gift does not exist.");
+        return null;
+      }
+
+      EventModel event = EventModel.fromFirestore(eventDoc.data() as Map<String, dynamic>, eventDoc.id);
+
+      // Get the creator (userId) of this event (event owner)
+      String ownerId = event.userId;
+
+      // Fetch user information for the creator/owner of the event
+      final ownerDoc = await _firestore.collection('users').doc(ownerId).get();
+      if (!ownerDoc.exists) {
+        print("Owner user does not exist.");
+        return null;
+      }
+
+      UserModel owner = UserModel.fromFirestore(ownerDoc);
+
+      // Check if the gift's owner is a friend of the user
+      List<UserModel> userFriends = await getFriendList(userId);
+      bool isFriend = userFriends.any((friend) => friend.uid == owner.uid);
+
+      if (isFriend) {
+        return owner; // Return the owner if they are a friend
+      } else {
+        print("Owner is not a friend.");
+        return null; // Return null if the owner is not a friend
+      }
+    } catch (e) {
+      print('Error fetching friend owner of pledged gift: $e');
+      throw Exception('Error fetching friend owner of pledged gift: $e');
+    }
+  }
 
 
 
+  // Fetch all gifts pledged by the user
+  // Ensure this query is correct
+Future<List<Gift>> getUserPledgedGifts(String userId) async {
+  try {
+    final QuerySnapshot giftsSnapshot = await _firestore
+        .collection('gifts')
+        .where('pledgedBy',isEqualTo: userId)
+        .where('pledged', isEqualTo: true) // Fetch only pledged gifts
+        .get();
+    
+    if (giftsSnapshot.docs.isEmpty) {
+      print("No pledged gifts found.");
+    }
+
+    return giftsSnapshot.docs.map((doc) => Gift.fromFirestore(doc)).toList();
+  } catch (e) {
+    print('Error fetching pledged gifts: $e');
+    throw Exception('Error fetching pledged gifts: $e');
+  }
+}
 
 }

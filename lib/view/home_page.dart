@@ -33,7 +33,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _fetchFriendList();
     
-    // Initialize notifications for push notifications (without dialog)
+    
     _initializeNotifications();
   }
 
@@ -43,7 +43,7 @@ class _HomePageState extends State<HomePage> {
       _notificationSubscription = _notificationController.listenForUserNotifications(currentUserId).listen((notifications) {
         for (var notification in notifications) {
           if (!notification.isRead) {
-            // Handle the notification and show system notifications if needed
+            
             _showPushNotification(notification);
           }
         }
@@ -52,18 +52,16 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _showPushNotification(NotificationModel notification) {
-    // Here you can utilize a package like flutter_local_notifications to display the push notifications
-    // This would show a system notification on the phone instead of a dialog
-    // Ensure `flutter_local_notifications` is added in your pubspec.yaml and set up for real device usage
+    
     
     print('Received notification: ${notification.message}');
-    // Show Notification code goes here.
+   
   }
 
   @override
   void dispose() {
     super.dispose();
-    _notificationSubscription.cancel(); // Cancel notification stream when not needed
+    _notificationSubscription.cancel(); 
   }
 
   Future<void> _fetchFriendList() async {

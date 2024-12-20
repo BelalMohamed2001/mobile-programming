@@ -6,13 +6,13 @@ import '../controllers/database_helper.dart';
 class SyncManager {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Method to check online/offline status
+  
   Future<bool> isOnline() async {
     var connectivityResult = await (Connectivity().checkConnectivity());
     return connectivityResult != ConnectivityResult.none;
   }
 
-  // Sync Events (With Handling for Deletions)
+ 
   Future<void> syncEvents(String userId) async {
     List<Map<String, dynamic>> pendingOperations =
         await DatabaseHelper.instance.fetchPendingOperations();
@@ -33,7 +33,7 @@ class SyncManager {
           } else if (operation['operation'] == 'delete') {
             await _firestore.collection('events').doc(eventData['id']).delete();
             await DatabaseHelper.instance
-                .deleteEvent(eventData['id']); // Removing from SQLite
+                .deleteEvent(eventData['id']); 
           }
           synced = true;
         } catch (e) {
@@ -47,8 +47,7 @@ class SyncManager {
       }
     }
   }
-
-  // Sync Gifts (With Handling for Deletions)
+ 
   Future<void> syncGifts(String eventId) async {
     List<Map<String, dynamic>> pendingOperations =
         await DatabaseHelper.instance.fetchPendingOperations();
@@ -69,7 +68,7 @@ class SyncManager {
           } else if (operation['operation'] == 'delete') {
             await _firestore.collection('gifts').doc(giftData['id']).delete();
             await DatabaseHelper.instance
-                .deleteGift(giftData['id']); // Removing from SQLite
+                .deleteGift(giftData['id']); 
           }
           synced = true;
         } catch (e) {
@@ -84,7 +83,7 @@ class SyncManager {
     }
   }
 
-  // Sync Users (Handling User Sync for add or update operations)
+  
   Future<void> syncUsers() async {
     List<Map<String, dynamic>> pendingOperations =
         await DatabaseHelper.instance.fetchPendingOperations();
@@ -116,14 +115,14 @@ class SyncManager {
     }
   }
 
-  // Sync all data (Users, Events, Gifts) when online
+  
   Future<void> syncAllData(String userId) async {
     if (await isOnline()) {
-      // Syncing events and gifts
+     
       await syncEvents(userId);
       await syncGifts(userId);
 
-      // You can also sync users if needed
+      
       await syncUsers();
     } else {
       print("Device is offline. Syncing will resume once online.");

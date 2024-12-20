@@ -4,9 +4,9 @@ import 'controllers/auth_controller.dart';
 import 'view/home_page.dart';
 import 'view/login_page.dart';
 import 'view/signup_page.dart';
-import 'services/notification_service.dart'; // Import the NotificationService
+import 'services/notification_service.dart';
 
-// Global navigation key
+
 final GlobalKey<NavigatorState> navigationKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
@@ -28,7 +28,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.pink,
       ),
-      initialRoute: '/login', // Initial route set to login page
+      initialRoute: '/login', 
       routes: {
         '/login': (context) =>  LoginPage(),
         '/signup': (context) =>  SignupPage(),
@@ -44,10 +44,10 @@ class MyApp extends StatelessWidget {
             }
 
             if (snapshot.hasData) {
-              return const HomePage(); // Redirect to Home if authenticated
+              return const HomePage(); 
             }
 
-            return LoginPage(); // Redirect to Login if not authenticated
+            return LoginPage(); 
           },
         ),
       },

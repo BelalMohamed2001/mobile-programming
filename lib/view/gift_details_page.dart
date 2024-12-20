@@ -6,7 +6,7 @@ import '../models/gift_model.dart';
 
 class GiftDetailsPage extends StatefulWidget {
   final Gift gift;
-  final Function(Gift) onGiftUpdated; // Callback to notify changes in the gift
+  final Function(Gift) onGiftUpdated; 
 
   const GiftDetailsPage({Key? key, required this.gift, required this.onGiftUpdated}) : super(key: key);
 
@@ -61,7 +61,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
     );
 
     await _giftController.updateGift(updatedGift, _imageFile);
-    widget.onGiftUpdated(updatedGift); // Notify the GiftListPage of the change
+    widget.onGiftUpdated(updatedGift); 
   }
 
   @override

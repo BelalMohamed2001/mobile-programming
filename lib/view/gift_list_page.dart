@@ -68,11 +68,13 @@ class _GiftListPageState extends State<GiftListPage> {
                   controller: categoryController,
                   decoration: const InputDecoration(labelText: 'Category'),
                 ),
+                
                 TextField(
                   controller: priceController,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(labelText: 'Price'),
                 ),
+                
               ],
             ),
           ),
@@ -90,7 +92,7 @@ class _GiftListPageState extends State<GiftListPage> {
                   description: descriptionController.text,
                   category: categoryController.text,
                   price: double.tryParse(priceController.text) ?? 0.0,
-                  pledged: gift?.pledged ?? false, // Maintain current pledged status
+                  pledged: gift?.pledged ?? false, 
                 );
 
                 if (gift == null) {
@@ -170,7 +172,7 @@ class _GiftListPageState extends State<GiftListPage> {
                   },
                 ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _editGiftDialog(null), // Adding a new gift
+        onPressed: () => _editGiftDialog(null), 
         tooltip: 'Add Gift',
         child: const Icon(Icons.add),
       ),

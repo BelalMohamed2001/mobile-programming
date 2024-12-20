@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/auth_model.dart'; // Ensure UserModel is the correct one used
+import '../models/auth_model.dart'; 
 import '../services/notification_service.dart';
 
 class AuthController {
@@ -12,7 +12,7 @@ class AuthController {
   Future<UserModel?> signUp(
       String email, String password, String phoneNumber, String name) async {
     try {
-      // Create the user with email and password using Firebase Auth
+      
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -20,22 +20,22 @@ class AuthController {
       final user = userCredential.user;
 
       if (user != null) {
-        // Create user model object to hold user data
+        
         UserModel userModel = UserModel(
           email: user.email!,
           uid: user.uid,
           name: name,
           phoneNumber: phoneNumber,
-          friendList: [], // Initialize with an empty friend list
+          friendList: [], 
         );
 
-        // Add the user data to Firestore in 'users' collection
+       
         await _firestore
             .collection('users')
             .doc(user.uid)
             .set(userModel.toMap());
 
-        // Return the UserModel object
+        
         return userModel;
       }
       return null;
@@ -73,7 +73,7 @@ class AuthController {
       DocumentSnapshot userDoc =
           await _firestore.collection('users').doc(userId).get();
       if (userDoc.exists) {
-        return UserModel.fromFirestore(userDoc); // Parse Firestore document
+        return UserModel.fromFirestore(userDoc); 
       }
       throw Exception('User profile not found');
     } catch (e) {
@@ -100,10 +100,10 @@ class AuthController {
   Stream<User?> get authStateChanges {
     return _auth.authStateChanges().asyncMap((user) async {
       if (user != null) {
-        // Notify service that user has signed in
+        
         await _notificationService.initNotifications();
       } else {
-        // Notify service that user signed out (don't show notifications)
+        
         _notificationService.hasShownNotification = false;
       }
       return user;

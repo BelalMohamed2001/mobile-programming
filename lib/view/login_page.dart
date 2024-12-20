@@ -32,7 +32,7 @@ class LoginPage extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Welcome, ${user.email}!')),
         );
-        // After successful login, navigate to HomePage after a short delay
+       
         Future.delayed(Duration(seconds: 1), () {
           Navigator.pushReplacementNamed(context, '/');
         });
@@ -46,7 +46,7 @@ class LoginPage extends StatelessWidget {
         } else if (e.code == 'wrong-password') {
           errorMessage = 'Wrong password entered.';
         }
-        // Add other FirebaseAuthException error cases here if needed.
+       
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -58,7 +58,7 @@ class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: () async => false, // Disable back button in the login page
+      onWillPop: () async => false, 
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Login'),

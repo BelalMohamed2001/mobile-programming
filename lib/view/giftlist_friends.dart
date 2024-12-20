@@ -52,7 +52,7 @@ class _GiftListScreenState extends State<GiftListScreen> {
       );
     } else {
       try {
-        // Fetch the Event associated with the gift to get the creator (userId)
+        
         final eventSnapshot = await FirebaseFirestore.instance
             .collection('events')
             .doc(gift.eventId)
@@ -65,17 +65,16 @@ class _GiftListScreenState extends State<GiftListScreen> {
         EventModel event =
             EventModel.fromFirestore(eventSnapshot.data()!, eventSnapshot.id);
 
-        String creatorId = event.userId; // UserId of the event creator/host
-
-        // Now call the pledgeGift logic
+        String creatorId = event.userId; 
+        
         await _homeController.pledgeGift(gift.id, creatorId);
 
-        // Send Notification to the creator of the gift
+        
         final message = 'Someone has pledged to buy your gift: ${gift.name}!';
         await _notificationController.sendNotification(
             creatorId, gift.id, message);
 
-        setState(() {}); // Refresh state to update the UI
+        setState(() {}); 
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Gift successfully pledged!'),
         ));

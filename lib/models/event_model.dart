@@ -7,7 +7,7 @@ class EventModel {
   final String date;
   final String userId;
 
-  // Constructor
+  
   EventModel({
     required this.id,
     required this.name,
@@ -18,7 +18,7 @@ class EventModel {
     required this.userId,
   });
 
-  // Firestore-specific factory method (Used for fetching data from Firestore)
+  
   factory EventModel.fromFirestore(Map<String, dynamic> data, String id) {
     return EventModel(
       id: id,
@@ -31,7 +31,7 @@ class EventModel {
     );
   }
 
-  // SQLite-specific factory method (Used for fetching data from SQLite)
+  
   factory EventModel.fromMapSQLite(Map<String, dynamic> map) {
     return EventModel(
       id: map['id'],
@@ -44,7 +44,7 @@ class EventModel {
     );
   }
 
-  // Firestore-specific method to convert EventModel to Map for saving to Firestore
+  
   Map<String, dynamic> toFirestore() {
     return {
       'name': name,
@@ -56,7 +56,7 @@ class EventModel {
     };
   }
 
-  // SQLite-specific method to convert EventModel to Map for storing in SQLite
+  
   Map<String, dynamic> toMapSQLite() {
     return {
       'id': id,
@@ -69,13 +69,13 @@ class EventModel {
     };
   }
 
-  // Method to update the status field
+  
   EventModel copyWith({String? status}) {
     return EventModel(
       id: this.id,
       name: this.name,
       category: this.category,
-      status: status ?? this.status, // Only updates status if a new one is passed
+      status: status ?? this.status, 
       description: this.description,
       date: this.date,
       userId: this.userId,
