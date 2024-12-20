@@ -4,7 +4,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        // Import the Firebase BoM
+        // Import the Firebase BoM (Google Services plugin)
         classpath 'com.google.gms:google-services:4.3.15'
     }
 }
@@ -14,26 +14,35 @@ allprojects {
         google()
         mavenCentral()
     }
-}
 
-subprojects {
-    afterEvaluate { project ->
-        if (project.hasProperty('android')) {
-            project.android {
-                if (namespace == null) {
-                    namespace project.group
+    rootProject.buildDir = "../build"
+
+    subprojects {
+        // Set compileSdkVersion, buildToolsVersion for all subprojects
+        afterEvaluate { project ->
+            if (project.plugins.hasPlugin("com.android.application") ||
+                project.plugins.hasPlugin("com.android.library")) {
+                project.android {
+                    compileSdkVersion 34
+                    buildToolsVersion "34.0.0"
+                }
+            }
+
+            if (project.hasProperty("android")) {
+                project.android {
+                    if (namespace == null) {
+                        namespace project.group // Set namespace to project group if not already defined
+                    }
                 }
             }
         }
-    }
-}
 
-rootProject.buildDir = "../build"
-subprojects {
-    project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-subprojects {
-    project.evaluationDependsOn(":app")
+        // Ensure each subproject uses the root build directory for outputs
+        project.buildDir = "${rootProject.buildDir}/${project.name}"
+
+        // Ensure subprojects depend on the app module for evaluation
+        project.evaluationDependsOn(":app")
+    }
 }
 
 tasks.register("clean", Delete) {
