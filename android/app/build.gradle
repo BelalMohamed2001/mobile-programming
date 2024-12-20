@@ -1,15 +1,17 @@
 plugins {
     id "com.android.application"
     id "kotlin-android"
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
-    id "dev.flutter.flutter-gradle-plugin"
+    id "dev.flutter.flutter-gradle-plugin" // Apply Flutter plugin last as needed
     id "com.google.gms.google-services"
 }
 
 android {
     namespace = "com.example.the_project"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    
+    compileSdk = 34 // Latest Compile SDK version
+    buildToolsVersion = "34.0.0" // Align with the root build.gradle settings
+
+    ndkVersion = "25.1.8937393" // Required NDK version for Firebase/other plugins
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -18,31 +20,36 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = "1.8" // Use string "1.8" for Kotlin JVM target
+        jvmTarget = "1.8" // Kotlin JVM target version
     }
 
     defaultConfig {
         applicationId = "com.example.the_project"
-        minSdk = 23
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 31 // At least API level 31 for compatibility with android:attr/lStar
+        targetSdk = 33 // Google Play requirement, ensure target SDK is set to 33
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            // Add signing config for release, replace with actual signing config
+            signingConfig = signingConfigs.debug // Replace with actual release config
+        }
+    }
+
+    configurations.all {
+        resolutionStrategy {
+            force 'androidx.core:core-ktx:1.6.0' // Force resolution for compatibility issues
         }
     }
 }
 
 dependencies {
-    // Add this dependency for core library desugaring
+    // Core library desugaring required for newer APIs
     coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.0.3"
 }
 
 flutter {
-    source = "../.."
+    source = "../.." // Correct Flutter source directory path
 }
