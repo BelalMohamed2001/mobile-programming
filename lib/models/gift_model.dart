@@ -54,5 +54,34 @@ class Gift {
       'imageUrl': imageUrl,
     };
   }
-  
+
+  // Convert a Map from SQLite into Gift instance
+  factory Gift.fromMapSQLite(Map<String, dynamic> map) {
+    return Gift(
+      id: map['id'],
+      name: map['name'],
+      category: map['category'],
+      price: map['price'],
+      pledged: map['pledged'] == 1, // If pledged, store as 1 (true), otherwise 0 (false)
+      pledgedBy: map['pledgedBy'],
+      eventId: map['eventId'],
+      description: map['description'],
+      imageUrl: map['imageUrl'],
+    );
+  }
+
+  // Convert Gift instance to a Map for SQLite insert/update
+  Map<String, dynamic> toMapSQLite() {
+    return {
+      'id': id,
+      'name': name,
+      'category': category,
+      'price': price,
+      'pledged': pledged ? 1 : 0, // Store pledged as 1 (true) or 0 (false)
+      'pledgedBy': pledgedBy,
+      'eventId': eventId,
+      'description': description,
+      'imageUrl': imageUrl,
+    };
+  }
 }

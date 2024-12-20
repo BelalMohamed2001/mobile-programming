@@ -139,17 +139,36 @@ class HomeController {
 
 Future<void> pledgeGift(String giftId, String creatorId) async {
   try {
+    // Check if this gift has already been pledged
+    final giftDoc = await _firestore.collection('gifts').doc(giftId).get();
+    if (giftDoc.exists && giftDoc['pledged']) {
+      throw Exception('Gift already pledged!');
+    }
+
+    // Update the gift status as pledged
     await _firestore.collection('gifts').doc(giftId).update({
       'pledged': true,
     });
 
-    // Send a notification to the gift creator
-    final message = 'Someone has pledged to buy your gift!';
-    await _notificationController.sendNotification(creatorId, giftId, message);
+    // Create a new notification entry, if not already sent
+    await _firestore.collection('notifications').add({
+      'userId': creatorId,
+      'giftId': giftId,
+      'message': 'Someone has pledged to buy your gift!',
+      'title': 'Gift Pledged!',
+      'isSent': false,  // Ensure it's sent only once
+      'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false,  // Mark as unread initially
+    });
+
+    // Send notification to the creator
+    await _notificationController.sendNotification(creatorId, giftId, 'Someone has pledged to buy your gift!');
   } catch (e) {
+    print('Error pledging gift: $e');
     throw Exception('Error pledging gift: $e');
   }
 }
+
 
 
 

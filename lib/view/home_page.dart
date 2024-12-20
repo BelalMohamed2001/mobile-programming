@@ -4,7 +4,7 @@ import 'package:the_project/controllers/auth_controller.dart';
 import '../models/auth_model.dart';
 import 'profile_page.dart';
 import 'event_list_page.dart';
-import 'giftlist_friends.dart'; // Import the GiftListScreen
+import 'giftlist_friends.dart';
 import '../controllers/home_controller.dart';
 import 'package:the_project/controllers/notification_controller.dart';
 import 'package:the_project/models/notification_model.dart';
@@ -22,54 +22,48 @@ class _HomePageState extends State<HomePage> {
   final HomeController _homeController = HomeController();
   final AuthController _auth = AuthController();
   final NotificationController _notificationController = NotificationController();
-  late StreamSubscription<List<NotificationModel>> _notificationSubscription; // Notification listener
+  late StreamSubscription<List<NotificationModel>> _notificationSubscription;
 
   UserModel? _searchedUser;
   List<UserModel> _friendList = [];
   bool _isLoading = false;
 
- @override
-void initState() {
-  super.initState();
-  _fetchFriendList();
-  
-  // Fetch the current user ID asynchronously
-  _initializeNotifications();
-}
-
-Future<void> _initializeNotifications() async {
-  String? currentUserId = await _auth.getCurrentUser(); // Get current user ID
-  if (currentUserId != null) {
-    // Now it's safe to use currentUserId since it is resolved
-    _notificationSubscription = _notificationController.listenForUserNotifications(currentUserId).listen((notifications) {
-      for (var notification in notifications) {
-        if (!notification.isRead) {
-          // Show popup when a new notification arrives
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text('New Notification!'),
-              content: Text(notification.message),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          );
-        }
-      }
-    });
+  @override
+  void initState() {
+    super.initState();
+    _fetchFriendList();
+    
+    // Initialize notifications for push notifications (without dialog)
+    _initializeNotifications();
   }
-}
 
+  Future<void> _initializeNotifications() async {
+    String? currentUserId = await _auth.getCurrentUser(); 
+    if (currentUserId != null) {
+      _notificationSubscription = _notificationController.listenForUserNotifications(currentUserId).listen((notifications) {
+        for (var notification in notifications) {
+          if (!notification.isRead) {
+            // Handle the notification and show system notifications if needed
+            _showPushNotification(notification);
+          }
+        }
+      });
+    }
+  }
+
+  void _showPushNotification(NotificationModel notification) {
+    // Here you can utilize a package like flutter_local_notifications to display the push notifications
+    // This would show a system notification on the phone instead of a dialog
+    // Ensure `flutter_local_notifications` is added in your pubspec.yaml and set up for real device usage
+    
+    print('Received notification: ${notification.message}');
+    // Show Notification code goes here.
+  }
 
   @override
   void dispose() {
     super.dispose();
-    // Cancel notification subscription when not needed
-    _notificationSubscription.cancel();
+    _notificationSubscription.cancel(); // Cancel notification stream when not needed
   }
 
   Future<void> _fetchFriendList() async {

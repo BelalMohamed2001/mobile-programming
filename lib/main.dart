@@ -4,6 +4,10 @@ import 'controllers/auth_controller.dart';
 import 'view/home_page.dart';
 import 'view/login_page.dart';
 import 'view/signup_page.dart';
+import 'services/notification_service.dart'; // Import the NotificationService
+
+// Global navigation key
+final GlobalKey<NavigatorState> navigationKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

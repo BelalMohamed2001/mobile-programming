@@ -1,10 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/auth_model.dart'; // Ensure UserModel is the correct one used
+import '../services/notification_service.dart';
 
 class AuthController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final NotificationService _notificationService = NotificationService();
 
   // Sign Up a new user
   Future<UserModel?> signUp(
@@ -94,20 +96,19 @@ class AuthController {
   }
 
   // Stream to listen to the authentication state
-  Stream<UserModel?> get authStateChanges {
+  // Listen for authentication state changes
+  Stream<User?> get authStateChanges {
     return _auth.authStateChanges().asyncMap((user) async {
       if (user != null) {
-        // Fetch user data from Firestore when the user state changes
-        DocumentSnapshot userDoc =
-            await _firestore.collection('users').doc(user.uid).get();
-        if (userDoc.exists) {
-          return UserModel.fromFirestore(userDoc); // Parse Firestore document
-        }
+        // Notify service that user has signed in
+        await _notificationService.initNotifications();
+      } else {
+        // Notify service that user signed out (don't show notifications)
+        _notificationService.hasShownNotification = false;
       }
-      return null;
+      return user;
     });
   }
-
   // Fetch the current user's UID
   Future<String?> getCurrentUser() async {
     try {

@@ -8,6 +8,7 @@ class EventController {
   final CollectionReference eventsCollection =
       FirebaseFirestore.instance.collection('events');
   final GiftController _giftController = GiftController();
+  
 
   // Fetch events for the current user
   Future<List<EventModel>> fetchEvents(String userId) async {
