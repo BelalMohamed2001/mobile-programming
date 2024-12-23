@@ -132,7 +132,7 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                             IconButton(
                               icon: const Icon(Icons.edit, color: Colors.blue),
                               onPressed: () => _modifyGiftStatusDialog(
-                                  gift), // Show dialog instead of navigation
+                                  gift), 
                             ),
                         ],
                       ),
