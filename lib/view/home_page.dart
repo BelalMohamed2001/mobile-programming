@@ -8,7 +8,9 @@ import 'giftlist_friends.dart';
 import '../controllers/home_controller.dart';
 import 'package:the_project/controllers/notification_controller.dart';
 import 'package:the_project/models/notification_model.dart';
+import '../controllers/event_controller.dart';
 import 'dart:async';
+import '../models/event_model.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -21,6 +23,7 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
   final HomeController _homeController = HomeController();
   final AuthController _auth = AuthController();
+  final EventController _eventController = EventController();
   final NotificationController _notificationController = NotificationController();
   late StreamSubscription<List<NotificationModel>> _notificationSubscription;
 
@@ -31,19 +34,17 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _fetchFriendList();
-    
-    
+    _fetchFriendListWithEventCounts();
     _initializeNotifications();
   }
 
   Future<void> _initializeNotifications() async {
-    String? currentUserId = await _auth.getCurrentUser(); 
+    String? currentUserId = await _auth.getCurrentUser();
     if (currentUserId != null) {
-      _notificationSubscription = _notificationController.listenForUserNotifications(currentUserId).listen((notifications) {
+      _notificationSubscription =
+          _notificationController.listenForUserNotifications(currentUserId).listen((notifications) {
         for (var notification in notifications) {
           if (!notification.isRead) {
-            
             _showPushNotification(notification);
           }
         }
@@ -52,31 +53,40 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _showPushNotification(NotificationModel notification) {
-    
-    
     print('Received notification: ${notification.message}');
-   
   }
 
   @override
   void dispose() {
     super.dispose();
-    _notificationSubscription.cancel(); 
+    _notificationSubscription.cancel();
   }
 
-  Future<void> _fetchFriendList() async {
+  Future<int> _fetchUpcomingEventCount(String friendId) async {
+    try {
+      List<EventModel> events = await _eventController.fetchEvents(friendId);
+      return events.where((event) => event.status == 'Upcoming').length;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  Future<void> _fetchFriendListWithEventCounts() async {
     setState(() => _isLoading = true);
     try {
       String? currentUserId = await _auth.getCurrentUser();
       if (currentUserId != null) {
         List<UserModel> friends = await _homeController.getFriendList(currentUserId);
+        for (var friend in friends) {
+          friend.upcomingEventCount = await _fetchUpcomingEventCount(friend.uid);
+        }
         setState(() {
           _friendList = friends;
         });
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching friend list: $e')),
+        SnackBar(content: Text('Error fetching friends or events: $e')),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -126,7 +136,7 @@ class _HomePageState extends State<HomePage> {
         setState(() {
           _searchedUser = null;
         });
-        _fetchFriendList();
+        _fetchFriendListWithEventCounts();
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -219,8 +229,23 @@ class _HomePageState extends State<HomePage> {
                         itemBuilder: (context, index) {
                           final friend = _friendList[index];
                           return ListTile(
+                            leading: CircleAvatar(
+                              backgroundImage: NetworkImage(
+                                  'https://toppng.com/uploads/preview/cool-avatar-transparent-image-cool-boy-avatar-11562893383qsirclznyw.png'), 
+                            ),
                             title: Text(friend.name),
-                            subtitle: Text(friend.phoneNumber),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(friend.phoneNumber),
+                                Text(
+                                  friend.upcomingEventCount! > 0
+                                      ? 'Upcoming Events: ${friend.upcomingEventCount}'
+                                      : 'No Upcoming Events',
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
+                              ],
+                            ),
                             trailing: const Icon(Icons.arrow_forward),
                             onTap: () {
                               Navigator.push(

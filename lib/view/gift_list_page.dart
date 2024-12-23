@@ -36,6 +36,12 @@ class _GiftListPageState extends State<GiftListPage> {
     _loadGifts();
   }
 
+  // Change the gift's status
+  void _changeGiftStatus(String giftId, String status) async {
+    await _giftController.changeGiftStatus(giftId, status);
+    _loadGifts();
+  }
+
   // Show dialog to add or edit gift
   Future<void> _editGiftDialog(Gift? gift) async {
     TextEditingController nameController =
@@ -46,6 +52,10 @@ class _GiftListPageState extends State<GiftListPage> {
         TextEditingController(text: gift?.category ?? '');
     TextEditingController priceController =
         TextEditingController(text: gift?.price?.toString() ?? '0.0');
+    TextEditingController imageUrlController =
+        TextEditingController(text: gift?.imageUrl ?? '');
+    TextEditingController dueDateController =
+        TextEditingController(text: gift?.dueDate ?? '');
 
     await showDialog(
       context: context,
@@ -61,20 +71,27 @@ class _GiftListPageState extends State<GiftListPage> {
                 ),
                 TextField(
                   controller: descriptionController,
-                  decoration:
-                      const InputDecoration(labelText: 'Gift Description'),
+                  decoration: const InputDecoration(labelText: 'Gift Description'),
                 ),
                 TextField(
                   controller: categoryController,
                   decoration: const InputDecoration(labelText: 'Category'),
                 ),
-                
                 TextField(
                   controller: priceController,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(labelText: 'Price'),
                 ),
-                
+                TextField(
+                  controller: imageUrlController,
+                  decoration: const InputDecoration(labelText: 'Image URL'),
+                ),
+                // Due Date Input Field
+                TextField(
+                  controller: dueDateController,
+                  decoration: const InputDecoration(labelText: 'Due Date (Optional)'),
+                  keyboardType: TextInputType.datetime,
+                ),
               ],
             ),
           ),
@@ -92,7 +109,10 @@ class _GiftListPageState extends State<GiftListPage> {
                   description: descriptionController.text,
                   category: categoryController.text,
                   price: double.tryParse(priceController.text) ?? 0.0,
-                  pledged: gift?.pledged ?? false, 
+                  pledged: gift?.pledged ?? false,
+                  imageUrl: imageUrlController.text,
+                  dueDate: dueDateController.text
+                      
                 );
 
                 if (gift == null) {
@@ -129,8 +149,20 @@ class _GiftListPageState extends State<GiftListPage> {
                     final gift = _gifts[index];
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                      color: gift.pledged ? Colors.green.shade100 : null, // Color the card if pledged
+                      color: gift.pledged ? Colors.green.shade100 : null,
                       child: ListTile(
+                        contentPadding: const EdgeInsets.all(10),
+                        leading: gift.imageUrl != null && gift.imageUrl!.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(8.0),
+                                child: Image.network(
+                                  gift.imageUrl!,
+                                  width: 60,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : const Icon(Icons.image, size: 60, color: Colors.grey),
                         title: Text(gift.name),
                         subtitle: Text('Price: \$${gift.price.toString()}'),
                         trailing: Row(
@@ -138,15 +170,11 @@ class _GiftListPageState extends State<GiftListPage> {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.edit),
-                              onPressed: gift.pledged
-                                  ? null // Disable edit if pledged
-                                  : () => _editGiftDialog(gift),
+                              onPressed: gift.pledged ? null : () => _editGiftDialog(gift),
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: gift.pledged
-                                  ? null // Disable delete if pledged
-                                  : () => _deleteGift(gift.id),
+                              onPressed: gift.pledged ? null : () => _deleteGift(gift.id),
                             ),
                           ],
                         ),
@@ -158,7 +186,6 @@ class _GiftListPageState extends State<GiftListPage> {
                                 gift: gift,
                                 onGiftUpdated: (updatedGift) {
                                   setState(() {
-                                    // Update the gift locally in the list
                                     final index = _gifts.indexWhere((g) => g.id == updatedGift.id);
                                     if (index != -1) _gifts[index] = updatedGift;
                                   });
@@ -172,7 +199,7 @@ class _GiftListPageState extends State<GiftListPage> {
                   },
                 ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _editGiftDialog(null), 
+        onPressed: () => _editGiftDialog(null),
         tooltip: 'Add Gift',
         child: const Icon(Icons.add),
       ),

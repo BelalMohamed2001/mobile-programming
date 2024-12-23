@@ -22,7 +22,7 @@ class _ProfilePageState extends State<ProfilePage> {
   UserModel? _currentUser;
   List<Map<String, dynamic>> _eventsWithGifts = [];
   bool _isLoading = true;
-  bool notificationsEnabled = true;
+  
 
   @override
   void initState() {
@@ -75,9 +75,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
  
-  void _toggleNotifications(bool value) {
-    setState(() => notificationsEnabled = value);
-  }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -120,20 +118,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildEditableField('Phone Number', _currentUser!.phoneNumber ?? 'Not set'),
 
           const SizedBox(height: 20),
-          // Notification Settings
-          const Text(
-            'Notification Settings',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-          ListTile(
-            title: const Text('Enable Notifications'),
-            trailing: Switch(
-              value: notificationsEnabled,
-              onChanged: _toggleNotifications,
-              activeColor: Colors.green,
-            ),
-          ),
+         
 
           const SizedBox(height: 20),
          

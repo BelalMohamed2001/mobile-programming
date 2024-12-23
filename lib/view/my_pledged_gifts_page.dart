@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:the_project/controllers/home_controller.dart';
 import 'package:the_project/models/auth_model.dart';
-import 'gift_details_page.dart'; 
-import 'package:the_project/models/gift_model.dart'; 
+import 'package:the_project/models/gift_model.dart';
+import '../controllers/gift_list_controller.dart';
 
 class MyPledgedGiftsPage extends StatefulWidget {
   final String userId;
@@ -18,6 +18,7 @@ class MyPledgedGiftsPage extends StatefulWidget {
 
 class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
   final HomeController _homeController = HomeController();
+  final GiftController _giftController = GiftController();
   List<Gift> pledgedGifts = [];
 
   @override
@@ -28,9 +29,11 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
 
   void _loadPledgedGifts() async {
     try {
-      List<Gift> gifts = await _homeController.getUserPledgedGifts(widget.userId);
+      List<Gift> gifts =
+          await _homeController.getUserPledgedGifts(widget.userId);
       for (var gift in gifts) {
-        UserModel? friendOwner = await _homeController.getFriendOwnsGift(widget.userId, gift.id);
+        UserModel? friendOwner =
+            await _homeController.getFriendOwnsGift(widget.userId, gift.id);
         gift.friendOwner = friendOwner?.name ?? "Unknown";
       }
       setState(() {
@@ -41,25 +44,42 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
     }
   }
 
-  void _modifyGift(Gift gift) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => GiftDetailsPage(
-          gift: gift,
-          onGiftUpdated: (updatedGift) {
-            setState(() {
-              pledgedGifts[pledgedGifts.indexWhere((g) => g.id == updatedGift.id)] = updatedGift;
-            });
-          },
-        ),
-      ),
-    );
-  }
+  void _modifyGiftStatusDialog(Gift gift) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text('Update Gift Status'),
+        content: Text('Do you want to mark this gift as delivered?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              _changeGiftStatus(gift, "Delivered"); 
+              Navigator.pop(context);
+            },
+            child: Text('Deliver Gift'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);  
+            },
+            child: Text('Cancel'),
+          ),
+        ],
+      );
+    },
+  );
+}
 
-  void _deleteGift(Gift gift) async {
-    // Implement deletion logic
-  }
+
+ void _changeGiftStatus(Gift gift, String status) async {
+  gift.status = status; 
+  await _giftController.updateGiftStatus(gift.id, status);  
+  setState(() {
+    pledgedGifts[pledgedGifts.indexWhere((g) => g.id == gift.id)] = gift;
+  });
+}
+  
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +108,8 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                 itemBuilder: (context, index) {
                   final gift = pledgedGifts[index];
                   return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    margin:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                     child: ListTile(
                       title: Text(
                         gift.name,
@@ -98,19 +119,21 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Friend: ${gift.friendOwner}'),
-                         
-                          Text('Status: ${gift.pledged ? 'Pending' : 'Delivered'}'),
+                          if (gift.dueDate != null)
+                            Text(
+                                'Due Date: ${gift.dueDate!}'),
+                          Text('Status: ${gift.status}'),
                         ],
                       ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (gift.pledged)
+                          if (gift.status == "Pending")
                             IconButton(
                               icon: const Icon(Icons.edit, color: Colors.blue),
-                              onPressed: () => _modifyGift(gift),
+                              onPressed: () => _modifyGiftStatusDialog(
+                                  gift), // Show dialog instead of navigation
                             ),
-                          
                         ],
                       ),
                     ),

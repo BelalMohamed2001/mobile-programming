@@ -9,8 +9,7 @@ class GiftController {
   final CollectionReference _giftsCollection =
       FirebaseFirestore.instance.collection('gifts');
 
-
-  // Fetch gifts by user ID
+  
   Future<List<Gift>> getGiftsByUser(String userId) async {
     final querySnapshot = await _giftsCollection.where('eventId', isEqualTo: userId).get();
     return querySnapshot.docs
@@ -18,13 +17,12 @@ class GiftController {
         .toList();
   }
 
-  // Pledge a gift (mark as pledged in Firestore)
+  
   Future<void> pledgeGift(String giftId) async {
     await _giftsCollection.doc(giftId).update({'pledged': true});
   }
 
-
-  /// Fetch gifts associated with an event by `eventId`.
+  
   Future<List<Gift>> fetchGifts(String eventId) async {
     try {
       QuerySnapshot snapshot = await _firestore
@@ -38,13 +36,12 @@ class GiftController {
     }
   }
 
-  /// Fetch gifts created or pledged by a specific user by `userId`.
+ 
   Future<List<Gift>> fetchGiftsForUser(String userId) async {
     try {
       QuerySnapshot snapshot = await _firestore
           .collection('gifts')
-          .where('userId',
-              isEqualTo: userId) 
+          .where('userId', isEqualTo: userId)
           .get();
 
       return snapshot.docs.map((doc) => Gift.fromFirestore(doc)).toList();
@@ -54,16 +51,10 @@ class GiftController {
   }
 
   
-  Future<void> addGift(Gift gift, File? imageFile) async {
+  Future<void> addGift(Gift gift, String? imageUrl) async {
     try {
-      String? imageUrl;
-
-      if (imageFile != null) {
-        imageUrl = await _uploadImage(imageFile, gift.name);
-      }
-
       final giftData = gift.toMap();
-      if (imageUrl != null) {
+      if (imageUrl != null && imageUrl.isNotEmpty) {
         giftData['imageUrl'] = imageUrl;
       }
 
@@ -73,6 +64,7 @@ class GiftController {
     }
   }
 
+ 
   Future<void> deleteGift(String giftId) async {
     try {
       await _firestore.collection('gifts').doc(giftId).delete();
@@ -101,6 +93,21 @@ class GiftController {
     }
   }
 
+  
+  Future<void> changeGiftStatus(String giftId, String status) async {
+    try {
+      
+      if (status == 'Pending' || status == 'Delivered') {
+        await _giftsCollection.doc(giftId).update({'status': status});
+      } else {
+        throw Exception("Invalid status value. Only 'Pending' or 'Delivered' are allowed.");
+      }
+    } catch (e) {
+      throw Exception('Error updating status: $e');
+    }
+  }
+
+  
   Future<String> _uploadImage(File imageFile, String giftName) async {
     try {
       final storageRef = _storage.ref().child(
@@ -112,4 +119,20 @@ class GiftController {
       throw Exception('Error uploading image: $e');
     }
   }
+
+
+ Future<void> updateGiftStatus(String giftId, String status) async {
+  try {
+    if (status == 'Pending' || status == 'Delivered') {
+      final docRef = _giftsCollection.doc(giftId);
+      await docRef.update({'status': status});
+      print("Gift status updated to: $status for gift ID $giftId");
+    } else {
+      throw Exception("Invalid status value. Only 'Pending' or 'Delivered' are allowed.");
+    }
+  } catch (e) {
+    print("Error updating gift status: $e");
+  }
+}
+
 }
